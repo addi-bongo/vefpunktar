@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#1c2330">
+<title>Verkpunktar</title>
+<style>
+:root{--bg:#f3f4f6;--card:#fff;--ink:#15181e;--mut:#6b7280;--line:#e2e5ea;--acc:#e8641b;--accd:#c4500f;--hd:#1c2330;--r:12px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+header{background:var(--hd);color:#fff;display:flex;align-items:center;gap:6px;padding:8px 10px;min-height:54px;flex:none}
+header button{background:none;border:0;color:#fff;font-size:24px;width:40px;height:40px;border-radius:10px;line-height:1}
+header button:active{background:#ffffff1f}
+#back[hidden]{display:block;visibility:hidden}
+#title{flex:1;min-width:0}
+#title b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#title small{display:block;opacity:.6;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logo{display:inline-flex;align-items:center;gap:8px}
+.logo i{width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--acc);display:inline-block}
+#banner{background:#fff4e5;color:#7a4500;font-size:13px;padding:7px 14px;flex:none}
+#banner:empty{display:none}
+main{flex:1;overflow:auto;position:relative}
+main.full{overflow:hidden;background:#d9dce1}
+.wrap{max-width:920px;margin:0 auto;padding:16px 14px 100px}
+h2{font-size:20px;margin:6px 0 14px}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:22px 0 8px;font-weight:600}
+.path{font-size:13px;color:var(--mut);margin-bottom:10px;display:flex;flex-wrap:wrap;gap:4px}
+.path a{color:var(--mut);text-decoration:none;cursor:pointer}
+.path a:hover{color:var(--ink)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+.rows .row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.rows .row:last-child{border-bottom:0}
+.rows .row:active{background:#f7f7f9}
+.ico{width:38px;height:38px;border-radius:10px;background:#fdeee4;color:var(--acc);display:grid;place-items:center;font-size:19px;flex:none}
+.grow{flex:1;min-width:0}
+.grow b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.grow small{color:var(--mut);font-size:13px}
+.chev{color:#b5bac3;font-size:20px}
+.badge{min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:#e5484d;color:#fff;font-size:12px;font-weight:700;display:inline-grid;place-items:center}
+.badge.ok{background:#30a46c}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tile{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;display:flex;flex-direction:column}
+.tile .th{aspect-ratio:4/3;background:#eceef1 center/contain no-repeat}
+.tile .nm{padding:8px 10px;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile .badge{position:absolute;top:8px;right:8px}
+.tile.add{border:2px dashed #cfd3da;background:transparent;align-items:center;justify-content:center;color:var(--mut);min-height:150px;gap:6px;font-size:13px;text-align:center;padding:10px}
+.tile.add span{font-size:28px;color:var(--acc)}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:11px 16px;font-weight:600}
+.btn:active{background:var(--accd)}
+.btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:#fff;color:#d23a3f;border:1px solid #f1c4c6}
+.addrow{display:flex;align-items:center;gap:10px;padding:12px 14px;color:var(--acc);font-weight:600;cursor:pointer}
+.tabs{display:flex;gap:4px;background:#e6e8ec;padding:4px;border-radius:12px;margin:4px 0 6px}
+.tabs button{flex:1;border:0;background:transparent;padding:9px;border-radius:9px;font-weight:600;color:var(--mut)}
+.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px #0002}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+.chip{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--mut)}
+.chip.on{background:var(--hd);border-color:var(--hd);color:#fff}
+.search{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.pnum{width:28px;height:28px;border-radius:50%;color:#fff;font-weight:700;font-size:13px;display:grid;place-items:center;flex:none}
+.stl{font-size:12px;font-weight:600;padding:2px 8px;border-radius:10px;background:#f1f2f4}
+.empty{text-align:center;color:var(--mut);padding:40px 20px}
+.empty b{display:block;color:var(--ink);font-size:16px;margin-bottom:6px}
+.fab{position:fixed;right:18px;bottom:22px;z-index:5;box-shadow:0 6px 18px #e8641b55;border-radius:28px;padding:14px 20px}
+/* viewer */
+.viewer{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:grab}
+.viewer.adding{cursor:crosshair}
+.inner{position:absolute;left:0;top:0;transform-origin:0 0;--inv:1}
+.inner img{display:block;user-select:none;-webkit-user-drag:none;pointer-events:none;background:#fff;box-shadow:0 2px 12px #0003}
+.pin{position:absolute;width:34px;height:34px;margin:0;transform:translate(-50%,-100%) scale(var(--inv));transform-origin:50% 100%;cursor:pointer;z-index:1}
+.pin::before{content:"";position:absolute;inset:0;background:var(--c);border:2.5px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px #0006}
+.pin span{position:relative;display:grid;place-items:center;height:30px;color:#fff;font-weight:800;font-size:13px}
+.pin.sel{z-index:2}
+.pin.sel::before{box-shadow:0 0 0 4px #ffffffcc,0 0 0 7px var(--c)}
+.vbar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;z-index:3;background:#1c2330ee;padding:6px;border-radius:16px;box-shadow:0 6px 20px #0004}
+.vbar button{background:transparent;color:#fff;border:0;border-radius:11px;padding:10px 14px;font-weight:600;white-space:nowrap}
+.vbar button.on{background:var(--acc)}
+.hint{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#1c2330ee;color:#fff;padding:8px 14px;border-radius:20px;font-size:13px;z-index:3;white-space:nowrap}
+.hint[hidden]{display:none}
+/* panel */
+#panel{position:fixed;left:0;right:0;bottom:0;height:62vh;background:#fff;border-radius:18px 18px 0 0;box-shadow:0 -8px 30px #0003;z-index:20;transform:translateY(105%);transition:transform .22s ease;display:flex;flex-direction:column}
+#panel.open{transform:none}
+#panel .grab{width:40px;height:5px;background:#d4d7dc;border-radius:3px;margin:8px auto 0;flex:none}
+#pbody{overflow:auto;padding:8px 16px 24px;flex:1}
+@media(min-width:900px){#panel{left:auto;top:0;width:400px;height:auto;border-radius:0;transform:translateX(105%)}#panel .grab{display:none}}
+.ph{display:flex;align-items:center;gap:10px;margin:6px 0 12px}
+.ph .pnum{width:34px;height:34px;font-size:15px}
+.ph input{flex:1;font-size:17px;font-weight:600;border:0;border-bottom:2px solid transparent;padding:6px 2px;outline:0;min-width:0}
+.ph input:focus{border-bottom-color:var(--acc)}
+.x{background:#f1f2f4;border:0;width:34px;height:34px;border-radius:50%;font-size:16px}
+.seg{display:flex;gap:6px;margin-bottom:14px}
+.seg button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px 4px;font-weight:600;font-size:13px;color:var(--mut)}
+.seg button.on{color:#fff;border-color:transparent}
+.fl{display:block;font-size:12px;font-weight:600;color:var(--mut);margin-bottom:12px}
+.fl input,.fl textarea{display:block;width:100%;margin-top:4px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:15px;background:#fafbfc;outline:0}
+.fl input:focus,.fl textarea:focus{border-color:var(--acc);background:#fff}
+textarea{resize:vertical;min-height:64px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.photos{display:flex;gap:8px;flex-wrap:wrap}
+.photos .ph1{width:72px;height:72px;border-radius:10px;background:#eceef1 center/cover;cursor:pointer;border:1px solid var(--line)}
+.photos .addp{width:72px;height:72px;border-radius:10px;border:2px dashed #cfd3da;background:#fff;font-size:22px;color:var(--acc)}
+.note{padding:10px 12px;background:#f5f6f8;border-radius:12px;margin-bottom:8px}
+.note .who{font-size:12px;color:var(--mut);margin-bottom:3px}
+.note .who b{color:var(--ink)}
+.note p{margin:0;white-space:pre-wrap;word-wrap:break-word}
+.noteform{display:flex;gap:8px;align-items:flex-end;margin-top:6px}
+.noteform textarea{flex:1;min-height:44px;border:1px solid var(--line);border-radius:12px;padding:10px;outline:0}
+.meta{font-size:12px;color:var(--mut);margin:16px 0 10px}
+.pbtns{display:flex;gap:8px}
+.pbtns .btn{flex:1}
+/* dialog, toast, lightbox */
+#dlg{position:fixed;inset:0;background:#0007;z-index:40;display:none;align-items:flex-end;justify-content:center}
+#dlg.open{display:flex}
+@media(min-width:600px){#dlg{align-items:center}}
+.dbox{background:#fff;width:100%;max-width:420px;border-radius:18px 18px 0 0;padding:20px 18px 22px}
+@media(min-width:600px){.dbox{border-radius:18px}}
+.dbox h4{margin:0 0 6px;font-size:17px}
+.dbox p{margin:0 0 14px;color:var(--mut);font-size:14px}
+.dbtns{display:flex;gap:8px;margin-top:8px}
+.dbtns .btn{flex:1}
+.acts button{display:block;width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid var(--line);padding:14px 4px;font-size:16px}
+.acts button.danger{color:#d23a3f}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1c2330;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:50;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+#lb{position:fixed;inset:0;background:#000e;z-index:45;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+#lb.open{display:flex}
+#lb img{max-width:94vw;max-height:80vh;border-radius:6px}
+.loading{display:grid;place-items:center;height:100%;color:var(--mut)}
+</style>
+<style>
+#sync{font-size:12px;opacity:.75;white-space:nowrap;padding:0 4px}
+#sync.warn{color:#ffb4a8;opacity:1}
+.center{max-width:440px;margin:0 auto;padding:48px 22px;text-align:center}
+.center .logo i{width:44px;height:44px}
+.center h1{font-size:26px;margin:18px 0 6px}
+.center p{color:var(--mut);margin:0 0 22px}
+.ms{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#1b1b1b;border:1px solid #8c8c8c;border-radius:6px;padding:12px 18px;font-weight:600}
+.ms b{display:grid;grid-template-columns:9px 9px;gap:2px}.ms b i{width:9px;height:9px}
+.setup{text-align:left;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:14px}
+.setup code{background:#f1f2f4;padding:1px 5px;border-radius:4px;font-size:13px}
+.vbar .pg{display:flex;align-items:center;color:#fff;font-weight:600;font-size:13px}
+.vbar .pg button{padding:10px 8px}
+.pick .row{cursor:pointer}
+.spin{display:inline-block;width:18px;height:18px;border:2.5px solid #cfd3da;border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+.drive{font-size:12px;color:var(--mut);margin:-8px 0 14px}
+a.row{color:inherit;text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+  <button id="back" aria-label="Til baka" hidden>‹</button>
+  <div id="title"><b class="logo"><i></i>Verkpunktar</b></div>
+  <span id="sync"></span>
+  <button id="menu" aria-label="Valmynd" hidden>⋯</button>
+</header>
+<div id="banner"></div>
+<main id="view"><div class="loading"><span class="spin"></span></div></main>
+<div id="panel"><div class="grab"></div><div id="pbody"></div></div>
+<div id="dlg"><div class="dbox" id="dbox"></div></div>
+<div id="lb"></div>
+<div id="toast"></div>
+<input type="file" id="sheetIn" accept="image/*,application/pdf" multiple hidden>
+<input type="file" id="photoIn" accept="image/*" multiple hidden>
+<script>
+/* =====================================================================
+   STILLINGAR – fylltu inn eftir skráningu appsins í Microsoft Entra (Azure)
+   ===================================================================== */
+const CONFIG = {
+  clientId: 'SETTU-CLIENT-ID-HÉR',   // Application (client) ID
+  tenant:   'organizations',          // Directory (tenant) ID, eða 'organizations'
+  rootFolder: 'Verkpunktar'           // Rótarmappa verkefna í OneDrive / SharePoint
+};
+/* ===================================================================== */
+"use strict";
+const GRAPH='https://graph.microsoft.com/v1.0';
+const AUTH=`https://login.microsoftonline.com/${CONFIG.tenant}/oauth2/v2.0`;
+const SCOPES='openid profile offline_access User.Read Files.ReadWrite.All Sites.Read.All';
+const REDIRECT=location.origin+location.pathname;
+const PHOTO_DIR='Myndir punkta',DATA_DIR='_gogn';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const ST={opid:{l:'Opið',c:'#e5484d'},vinnsla:{l:'Í vinnslu',c:'#f5a524'},lokid:{l:'Lokið',c:'#30a46c'}};
+const fmt=ts=>ts?new Date(ts).toLocaleString('is-IS',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+const fmtD=d=>d?new Date(d+'T12:00').toLocaleDateString('is-IS',{day:'numeric',month:'short'}):'';
+const safeName=s=>String(s).replace(/["*:<>?/\\|]/g,'-').replace(/^\.+|\s+$/g,'').slice(0,200)||'Ónefnt';
+const ls={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+/* ---------------- innskráning (OAuth 2.0 + PKCE, engin aukasöfn) ---------------- */
+let tok=ls.get('vp_tok');
+class AuthErr extends Error{}
+const b64url=buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+function saveTok(j){tok={access:j.access_token,exp:Date.now()+((j.expires_in||3600)-90)*1000,refresh:j.refresh_token||(tok&&tok.refresh)};ls.set('vp_tok',tok)}
+async function login(){
+  const v=b64url(crypto.getRandomValues(new Uint8Array(32)));
+  const ch=b64url(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
+  const st=b64url(crypto.getRandomValues(new Uint8Array(16)));
+  sessionStorage.setItem('vp_pkce',JSON.stringify({v,st}));
+  location.href=AUTH+'/authorize?'+new URLSearchParams({client_id:CONFIG.clientId,response_type:'code',redirect_uri:REDIRECT,scope:SCOPES,code_challenge:ch,code_challenge_method:'S256',state:st,response_mode:'query',prompt:'select_account'});
+}
+async function handleRedirect(){
+  const q=new URLSearchParams(location.search);
+  if(q.get('error')){history.replaceState(null,'',REDIRECT);throw new Error(q.get('error_description')||q.get('error'))}
+  const code=q.get('code');if(!code)return;
+  history.replaceState(null,'',REDIRECT);
+  const p=JSON.parse(sessionStorage.getItem('vp_pkce')||'{}');sessionStorage.removeItem('vp_pkce');
+  if(!p.v||q.get('state')!==p.st)throw new Error('Innskráning rann út – reyndu aftur.');
+  const r=await fetch(AUTH+'/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:CONFIG.clientId,grant_type:'authorization_code',code,redirect_uri:REDIRECT,code_verifier:p.v,scope:SCOPES})});
+  const j=await r.json();if(!r.ok)throw new Error(j.error_description||'Innskráning mistókst');
+  saveTok(j);
+}
+let refreshP=null;
+async function getToken(){
+  if(tok&&tok.access&&tok.exp>Date.now())return tok.access;
+  if(tok&&tok.refresh){
+    const p=refreshP||(refreshP=(async()=>{try{const r=await fetch(AUTH+'/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({client_id:CONFIG.clientId,grant_type:'refresh_token',refresh_token:tok.refresh,scope:SCOPES,redirect_uri:REDIRECT})});if(!r.ok)return false;saveTok(await r.json());return true}catch(e){return false}finally{refreshP=null}})());
+    if(await p)return tok.access;
+  }
+  tok=null;ls.del('vp_tok');throw new AuthErr('Innskráning útrunnin');
+}
+function logout(){ls.del('vp_tok');tok=null;location.href=`${AUTH}/logout?post_logout_redirect_uri=${encodeURIComponent(REDIRECT)}`}
+
+/* ---------------- Microsoft Graph ---------------- */
+async function g(path,opt={},tries=0){
+  const t=await getToken();
+  const r=await fetch(path.startsWith('http')?path:GRAPH+path,{...opt,headers:{Authorization:'Bearer '+t,...(opt.headers||{})}});
+  if(r.status===401&&tries<1){if(tok)tok.exp=0;return g(path,opt,tries+1)}
+  if([429,503,504].includes(r.status)&&tries<3){await sleep((+r.headers.get('Retry-After')||2)*1000);return g(path,opt,tries+1)}
+  return r;
+}
+async function gj(path,opt){
+  const r=await g(path,opt);
+  if(!r.ok){let m='';try{m=(await r.json()).error.message}catch(e){}const e=new Error(m||('Villa '+r.status));e.status=r.status;throw e}
+  return r.status===204?null:r.json();
+}
+let cfg=ls.get('vp_cfg')||{driveBase:'/me/drive',driveName:'Mitt OneDrive'};
+const D=()=>cfg.driveBase;
+const P=name=>encodeURIComponent(name);
+async function children(id){let url=`${D()}/items/${id}/children?$top=500&$expand=thumbnails`,out=[];while(url){const j=await gj(url);out.push(...j.value);url=j['@odata.nextLink']}return out}
+async function childByName(pid,name){try{return await gj(`${D()}/items/${pid}:/${P(name)}`)}catch(e){if(e.status===404)return null;throw e}}
+const mkdir=(pid,name,cb='rename')=>gj(`${D()}/items/${pid}/children`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:safeName(name),folder:{},'@microsoft.graph.conflictBehavior':cb})});
+async function ensureDir(pid,name){const c=await childByName(pid,name);if(c)return c;try{return await mkdir(pid,name,'fail')}catch(e){if(e.status===409)return childByName(pid,name);throw e}}
+async function uploadFile(pid,name,blob,onProg){
+  const base=`${D()}/items/${pid}:/${P(safeName(name))}:`;
+  if(blob.size<=4e6)return gj(`${base}/content?@microsoft.graph.conflictBehavior=rename`,{method:'PUT',headers:{'Content-Type':blob.type||'application/octet-stream'},body:blob});
+  const s=await gj(`${base}/createUploadSession`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({item:{'@microsoft.graph.conflictBehavior':'rename'}})});
+  const CH=327680*16;let off=0,res=null;
+  while(off<blob.size){
+    const end=Math.min(off+CH,blob.size);
+    const r=await fetch(s.uploadUrl,{method:'PUT',headers:{'Content-Range':`bytes ${off}-${end-1}/${blob.size}`},body:blob.slice(off,end)});
+    if(!r.ok)throw new Error('Upphleðsla mistókst');
+    if(r.status===200||r.status===201)res=await r.json();
+    off=end;onProg&&onProg(off/blob.size);
+  }
+  return res;
+}
+async function fileBlob(id){const it=await gj(`${D()}/items/${id}`);const r=await fetch(it['@microsoft.graph.downloadUrl']);if(!r.ok)throw new Error('Niðurhal mistókst');return r.blob()}
+const thumbs=new Map();
+async function thumbUrl(id,size='medium'){const k=id+size;if(!thumbs.has(k))thumbs.set(k,gj(`${D()}/items/${id}/thumbnails/0/${size}`).then(j=>j.url).catch(()=>{thumbs.delete(k);return''}));return thumbs.get(k)}
+
+/* ---------------- punktaskrár (_gogn/<skráarauðkenni>.json) ---------------- */
+let me={name:'',email:''},rootItem=null,gogn=null;
+const SC=new Map();
+const emptySc=id=>({v:1,fileId:id,name:'',path:'',folderId:'',pins:{},notes:{}});
+function normSc(d,id){d=d&&typeof d==='object'?d:{};return{...emptySc(id),...d,pins:d.pins||{},notes:d.notes||{}}}
+const scUrl=id=>`${D()}/items/${gogn.id}:/${P(id+'.json')}`;
+async function fetchRemote(id){
+  let it=null;try{it=await gj(scUrl(id))}catch(e){if(e.status===404)return null;throw e}
+  const r=await fetch(it['@microsoft.graph.downloadUrl']);let d={};try{d=await r.json()}catch(e){}
+  return{d:normSc(d,id),eTag:it.eTag};
+}
+async function loadSc(id,force){
+  const c=SC.get(id);
+  if(c&&(!force||c.dirty||c.saving))return c;
+  if(c&&force){let it=null;try{it=await gj(scUrl(id))}catch(e){if(e.status!==404)throw e}if(!it||it.eTag===c.eTag)return c}
+  const rem=await fetchRemote(id);const cur=SC.get(id);
+  if(cur&&(cur.dirty||cur.saving))return cur;
+  const rec=rem?{d:rem.d,eTag:rem.eTag}:{d:emptySc(id),eTag:null};
+  rec.changed=!c||JSON.stringify(c.d)!==JSON.stringify(rec.d);
+  SC.set(id,rec);return rec;
+}
+let allScAt=0;
+async function loadAllSc(){
+  const items=await children(gogn.id);
+  await pool(items.filter(i=>i.file&&/\.json$/.test(i.name)),6,async it=>{
+    const id=it.name.replace(/\.json$/,'');const c=SC.get(id);
+    if(c&&(c.eTag===it.eTag||c.dirty||c.saving))return;
+    try{const r=await fetch(it['@microsoft.graph.downloadUrl']);SC.set(id,{d:normSc(await r.json(),id),eTag:it.eTag})}catch(e){}
+  });
+  allScAt=Date.now();
+}
+async function pool(arr,n,fn){let i=0;await Promise.all(Array.from({length:Math.min(n,arr.length)},async()=>{while(i<arr.length)await fn(arr[i++])}))}
+const ts=x=>x.updatedAt||x.createdAt||0;
+function mergeSc(remote,local){
+  const out={...remote,...local,pins:{...remote.pins},notes:{...remote.notes}};
+  for(const k of['pins','notes'])for(const[id,v]of Object.entries(local[k]))if(!out[k][id]||ts(v)>=ts(out[k][id]))out[k][id]=v;
+  const seen={};
+  Object.entries(out.pins).filter(([,p])=>!p.deleted).sort((a,b)=>a[1].createdAt-b[1].createdAt).forEach(([id,p])=>{const pg=p.page||1;seen[pg]=seen[pg]||new Set();if(seen[pg].has(p.n)){const n=Math.max(...seen[pg])+1;out.pins[id]={...p,n,updatedAt:Date.now()};seen[pg].add(n)}else seen[pg].add(p.n)});
+  return out;
+}
+const saveQ=new Map(),saveT=new Map(),dirtySet=new Set();
+function setSync(){const s=$('#sync');if(!rootItem){s.textContent='';return}const pend=[...SC.values()].some(r=>r.dirty||r.saving);const err=[...SC.values()].some(r=>r.err);s.className=err?'warn':'';s.textContent=err?'⚠ Óvistað':pend?'Vistar…':'✓ Vistað'}
+function touch(id){const rec=SC.get(id);rec.dirty=true;setSync();clearTimeout(saveT.get(id));saveT.set(id,setTimeout(()=>flush(id),800))}
+function flush(id){clearTimeout(saveT.get(id));const p=(saveQ.get(id)||Promise.resolve()).then(()=>doSave(id)).catch(e=>{const r=SC.get(id);if(r){r.err=true;r.dirty=true}setSync();if(e instanceof AuthErr)return needLogin();toast('Gat ekki vistað í OneDrive: '+e.message,5000);setTimeout(()=>{const r=SC.get(id);if(r&&r.err){r.err=false;flush(id)}},15000)});saveQ.set(id,p);return p}
+async function doSave(id){
+  const rec=SC.get(id);if(!rec||!rec.dirty)return;
+  rec.saving=true;
+  try{
+    for(let a=0;a<6;a++){
+      rec.dirty=false;
+      const h={'Content-Type':'application/json'};if(rec.eTag)h['If-Match']=rec.eTag;
+      const r=await g(scUrl(id)+':/content'+(rec.eTag?'':'?@microsoft.graph.conflictBehavior=fail'),{method:'PUT',headers:h,body:JSON.stringify(rec.d)});
+      if(r.ok){const it=await r.json();rec.eTag=it.eTag;rec.err=false;if(!rec.dirty)break;continue}
+      if(r.status===412||r.status===409){const rem=await fetchRemote(id);if(rem){rec.d=mergeSc(rem.d,rec.d);rec.eTag=rem.eTag}else rec.eTag=null;rec.dirty=true;render();continue}
+      rec.dirty=true;let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(m||('Villa '+r.status));
+    }
+  }finally{rec.saving=false;setSync()}
+}
+function stamp(rec,file){rec.d.name=file.name;rec.d.folderId=file.parentReference&&file.parentReference.id;rec.d.path=normPath(file.parentReference&&file.parentReference.path)+'/'+file.name}
+function normPath(p){p=p||'';const i=p.indexOf('root:');p=i>=0?p.slice(i+5):p;try{p=decodeURIComponent(p)}catch(e){}return p}
+const livePins=d=>Object.entries(d.pins).filter(([,p])=>!p.deleted);
+const openCount=pins=>pins.filter(([,p])=>p.status!=='lokid').length;
+
+/* ---------------- toast / dialogs ---------------- */
+let tT;function toast(m,ms=2600){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),ms)}
+function ask({title,text='',fields=[],ok='Í lagi',danger=false,cancel='Hætta við'}){
+  return new Promise(res=>{
+    const d=$('#dlg'),b=$('#dbox');
+    b.innerHTML=`<h4>${esc(title)}</h4>${text?`<p>${esc(text)}</p>`:''}${fields.map((f,i)=>`<label class="fl">${esc(f.label||'')}<input data-i="${i}" type="${f.type||'text'}" value="${esc(f.value||'')}" placeholder="${esc(f.ph||'')}"></label>`).join('')}<div class="dbtns">${cancel?`<button class="btn ghost" data-r="0">${esc(cancel)}</button>`:''}<button class="btn ${danger?'danger':''}" data-r="1">${esc(ok)}</button></div>`;
+    d.classList.add('open');
+    const inp=b.querySelector('input');if(inp)setTimeout(()=>{inp.focus();inp.select()},50);
+    const done=v=>{d.classList.remove('open');d.onclick=null;b.onkeydown=null;res(v)};
+    const collect=()=>fields.length?[...b.querySelectorAll('input')].map(i=>i.value.trim()):true;
+    d.onclick=e=>{if(e.target===d)return done(null);const r=e.target.closest('[data-r]');if(r)done(r.dataset.r==='1'?collect():null)};
+    b.onkeydown=e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT')done(collect());if(e.key==='Escape')done(null)};
+  });
+}
+function actions(list){
+  const d=$('#dlg'),b=$('#dbox');
+  b.innerHTML=`<div class="acts">${list.map((a,i)=>`<button data-a="${i}" class="${a.danger?'danger':''}">${esc(a.label)}</button>`).join('')}</div><div class="dbtns"><button class="btn ghost" data-a="-1">Loka</button></div>`;
+  d.classList.add('open');
+  d.onclick=e=>{const a=e.target.closest('[data-a]');if(e.target!==d&&!a)return;d.classList.remove('open');d.onclick=null;const i=a?+a.dataset.a:-1;if(i>=0)safe(list[i].fn)()};
+}
+function lightbox(url,onDelete){
+  const lb=$('#lb');
+  lb.innerHTML=`<img src="${esc(url)}" alt=""><div style="display:flex;gap:10px">${onDelete?'<button class="btn danger" data-l="del">Fjarlægja</button>':''}<button class="btn ghost" data-l="x">Loka</button></div>`;
+  lb.classList.add('open');
+  lb.onclick=e=>{const l=e.target.closest('[data-l]');if(e.target.tagName==='IMG')return;lb.classList.remove('open');if(l&&l.dataset.l==='del'&&onDelete)onDelete()};
+}
+const safe=fn=>async(...a)=>{try{return await fn(...a)}catch(e){console.error(e);if(e instanceof AuthErr)return needLogin();toast(e.message||'Villa kom upp',4500)}};
+
+/* ---------------- skjáir: uppsetning / innskráning ---------------- */
+function setHeader(title,sub,showBack){
+  $('#title').innerHTML=title?`<b>${esc(title)}</b>${sub?`<small>${esc(sub)}</small>`:''}`:'<b class="logo"><i></i>Verkpunktar</b>';
+  $('#back').hidden=!showBack;$('#menu').hidden=!rootItem;
+}
+function showSetup(){
+  setHeader('');
+  $('#view').innerHTML=`<div class="center"><span class="logo"><i></i></span><h1>Verkpunktar</h1><p>Appið hefur ekki verið tengt við Microsoft ennþá.</p>
+  <div class="setup"><b>Uppsetning (gerist einu sinni):</b><ol style="padding-left:18px;margin:8px 0 0">
+  <li>Skráðu appið í <b>Microsoft Entra</b> (portal.azure.com → App registrations) sem <i>Single-page application</i> með þessa slóð sem Redirect URI:<br><code>${esc(REDIRECT)}</code></li>
+  <li>Bættu við heimildunum <code>Files.ReadWrite.All</code>, <code>Sites.Read.All</code> og <code>User.Read</code> (Microsoft Graph, Delegated).</li>
+  <li>Settu <b>Application (client) ID</b> og <b>Directory (tenant) ID</b> í <code>CONFIG</code> efst í <code>index.html</code>.</li></ol>
+  <p style="margin:10px 0 0">Nánar í LEIÐBEININGAR.md.</p></div></div>`;
+}
+function showLogin(msg){
+  rootItem=null;setHeader('');setSync();
+  $('#view').innerHTML=`<div class="center"><span class="logo"><i></i></span><h1>Verkpunktar</h1><p>Punktar og athugasemdir á teikningar – vistað í OneDrive.</p>
+  ${msg?`<p style="color:#d23a3f">${esc(msg)}</p>`:''}
+  <button class="ms" id="loginBtn"><b><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></b>Skrá inn með Microsoft</button></div>`;
+  $('#loginBtn').onclick=()=>login();
+}
+function needLogin(){closePanel();showLogin('Innskráning rann út. Skráðu þig inn aftur – óvistaðar breytingar vistast þá.')}
+
+/* ---------------- geymsla (OneDrive / SharePoint) ---------------- */
+async function initDrive(){
+  rootItem=null;
+  const root=await ensureDir('root',CONFIG.rootFolder);
+  gogn=await ensureDir(root.id,DATA_DIR);
+  rootItem=root;SC.clear();thumbs.clear();allScAt=0;
+  trail=[{id:root.id,name:'Verkefni',item:root}];
+}
+function pickDrive(){
+  const d=$('#dlg'),b=$('#dbox');
+  b.innerHTML=`<h4>Hvar á að vista?</h4><p>Veldu þitt eigið OneDrive eða sameiginlegt SharePoint-safn (t.d. fyrir verkefnahóp).</p>
+  <div class="card rows pick"><div class="row" data-dr="me"><div class="ico">☁️</div><div class="grow"><b>Mitt OneDrive</b><small>${esc(me.email)}</small></div></div></div>
+  <label class="fl" style="margin-top:14px">Leita að SharePoint-svæði<input id="siteQ" placeholder="t.d. Framkvæmdir"></label>
+  <div id="siteRes" class="card rows pick"></div><div class="dbtns"><button class="btn ghost" data-dr="x">Hætta við</button></div>`;
+  d.classList.add('open');
+  let sites=[],t=null;
+  const q=$('#siteQ');
+  q.oninput=()=>{clearTimeout(t);t=setTimeout(safe(async()=>{const v=q.value.trim();if(v.length<2){$('#siteRes').innerHTML='';return}$('#siteRes').innerHTML='<div class="row"><span class="spin"></span></div>';const j=await gj(`/sites?search=${encodeURIComponent(v)}`);sites=j.value||[];$('#siteRes').innerHTML=sites.length?sites.map((s,i)=>`<div class="row" data-site="${i}"><div class="ico">🏢</div><div class="grow"><b>${esc(s.displayName||s.name)}</b><small>${esc(s.webUrl)}</small></div><span class="chev">›</span></div>`).join(''):'<div class="row"><small>Ekkert fannst</small></div>'}),400)};
+  d.onclick=safe(async e=>{
+    if(e.target===d){d.classList.remove('open');return}
+    let el;
+    if(el=e.target.closest('[data-dr]')){const v=el.dataset.dr;if(v==='x')return d.classList.remove('open');if(v==='me'){await useDrive('/me/drive','Mitt OneDrive');return}}
+    if(el=e.target.closest('[data-site]')){const s=sites[+el.dataset.site];const j=await gj(`/sites/${s.id}/drives`);$('#siteRes').innerHTML=j.value.map(dr=>`<div class="row" data-drive="${esc(dr.id)}" data-nm="${esc((s.displayName||s.name)+' › '+dr.name)}"><div class="ico">📚</div><div class="grow"><b>${esc(dr.name)}</b><small>${esc(s.displayName||s.name)}</small></div></div>`).join('')}
+    if(el=e.target.closest('[data-drive]'))await useDrive('/drives/'+el.dataset.drive,el.dataset.nm);
+  });
+}
+async function useDrive(base,name){
+  $('#dlg').classList.remove('open');
+  const old=cfg;cfg={driveBase:base,driveName:name};
+  $('#view').innerHTML='<div class="loading"><span class="spin"></span></div>';
+  try{await initDrive();ls.set('vp_cfg',cfg);toast('Geymsla: '+name);openFolder(0)}
+  catch(e){cfg=old;toast('Gat ekki opnað geymsluna: '+e.message,5000);await initDrive();openFolder(0)}
+}
+
+/* ---------------- möppur ---------------- */
+let trail=[],view='folder',folderTab='skjol',filt={st:'open',q:''},items=[],curSheet=null;
+const isDrawing=i=>i.file&&(/^image\//.test(i.file.mimeType||'')||/pdf/.test(i.file.mimeType||'')||/\.(pdf|png|jpe?g|webp|gif|heic)$/i.test(i.name));
+const hidden=i=>i.name===DATA_DIR||i.name===PHOTO_DIR||i.name.startsWith('.');
+const curFolder=()=>trail[trail.length-1];
+async function openFolder(idx,item){
+  closePanel();view='folder';addMode=false;moveMode=null;curSheet=null;
+  if(item)trail.push({id:item.id,name:item.name,item});else trail=trail.slice(0,idx+1);
+  const f=curFolder();
+  setHeader(trail.length>1?f.name:'Verkefni',trail.length>1?trail.slice(0,-1).map(t=>t.name).join(' › '):cfg.driveName,trail.length>1);
+  $('#view').classList.remove('full');
+  $('#view').innerHTML='<div class="loading"><span class="spin"></span></div>';
+  try{items=await children(f.id)}catch(e){if(e instanceof AuthErr)return needLogin();$('#view').innerHTML=`<div class="wrap"><div class="empty"><b>Gat ekki opnað möppuna</b>${esc(e.message)}<br><br><button class="btn" onclick="openFolder(${trail.length-1})">Reyna aftur</button></div></div>`;return}
+  if(f.id!==curFolder().id)return;
+  renderFolder(true);
+  pool(items.filter(isDrawing),4,async it=>{try{await loadSc(it.id,true)}catch(e){}if(view==='folder'&&curFolder().id===f.id&&folderTab==='skjol')renderFolder(false)});
+}
+function renderFolder(reset){
+  const v=$('#view'),sc=reset?0:v.scrollTop;
+  const act=document.activeElement,focusQ=act&&act.id==='q',sel=focusQ?act.selectionStart:0;
+  const f=curFolder(),isRoot=trail.length===1;
+  const subs=items.filter(i=>i.folder&&!hidden(i)).sort((a,b)=>a.name.localeCompare(b.name,'is'));
+  const draws=items.filter(i=>isDrawing(i)&&!hidden(i)).sort((a,b)=>a.name.localeCompare(b.name,'is'));
+  const others=items.filter(i=>i.file&&!isDrawing(i)&&!hidden(i));
+  let h=`<div class="wrap">`;
+  if(isRoot){
+    h+=`<h2>Verkefni</h2><div class="drive">☁️ ${esc(cfg.driveName)} › ${esc(CONFIG.rootFolder)}</div>`;
+    h+=subs.length?`<div class="card rows">${subs.map(s=>`<div class="row" data-folder="${esc(s.id)}"><div class="ico">🏗️</div><div class="grow"><b>${esc(s.name)}</b><small>${s.folder.childCount} atriði · breytt ${fmt(Date.parse(s.lastModifiedDateTime))}</small></div><span class="chev">›</span></div>`).join('')}</div>`
+      :`<div class="empty"><b>Engin verkefni enn</b>Stofnaðu verkefni – það verður að möppu í ${esc(cfg.driveName)}.</div>`;
+    h+=`<button class="btn fab" data-act="newfolder">＋ Nýtt verkefni</button>`;
+    return v.innerHTML=h+'</div>';
+  }
+  h+=`<div class="path"><a data-crumb="0">Verkefni</a>${trail.slice(1).map((t,i)=>` › <a data-crumb="${i+1}">${esc(t.name)}</a>`).join('')}</div>
+  <div class="tabs"><button data-tab="skjol" class="${folderTab==='skjol'?'on':''}">Skjöl</button><button data-tab="punktar" class="${folderTab==='punktar'?'on':''}">Punktar</button></div>`;
+  if(folderTab==='skjol'){
+    h+=`<h3>Möppur</h3><div class="card rows">${subs.map(s=>`<div class="row" data-folder="${esc(s.id)}"><div class="ico">📁</div><div class="grow"><b>${esc(s.name)}</b><small>${s.folder.childCount} atriði</small></div><span class="chev">›</span></div>`).join('')}<div class="addrow" data-act="newfolder">＋ Ný mappa</div></div>
+    <h3>Teikningar og myndir</h3><div class="grid">${draws.map(it=>{const rec=SC.get(it.id),pins=rec?livePins(rec.d):[],o=openCount(pins);const th=it.thumbnails&&it.thumbnails[0]&&(it.thumbnails[0].large||it.thumbnails[0].medium);
+      return`<div class="tile" data-sheet="${esc(it.id)}"><div class="th" style="${th?`background-image:url('${esc(th.url)}')`:''}">${th?'':'<div style="display:grid;place-items:center;height:100%;font-size:30px">📄</div>'}</div><div class="nm">${esc(it.name)}</div>${o?`<span class="badge">${o}</span>`:pins.length?'<span class="badge ok">✓</span>':''}</div>`}).join('')}
+    <div class="tile add" data-act="upload"><span>＋</span>Hlaða upp teikningu<br>(PDF eða mynd)</div></div>`;
+    if(others.length)h+=`<h3>Önnur skjöl</h3><div class="card rows">${others.map(o=>`<a class="row" href="${esc(o.webUrl)}" target="_blank" rel="noopener"><div class="ico">📎</div><div class="grow"><b>${esc(o.name)}</b><small>Opnast í Office / OneDrive</small></div><span class="chev">↗</span></a>`).join('')}</div>`;
+  }else{
+    const base=normPath(f.item.parentReference&&f.item.parentReference.path)+'/'+f.item.name+'/';
+    if(!allScAt){h+='<div class="empty"><span class="spin"></span><br>Sæki punkta…</div>';loadAllSc().then(()=>{if(view==='folder'&&folderTab==='punktar')renderFolder(false)}).catch(safe(e=>{throw e}))}
+    else{const pins=[];for(const[fid,rec]of SC)if((rec.d.path||'').startsWith(base))for(const[pid,p]of livePins(rec.d))pins.push({fid,pid,p,name:rec.d.name});h+=pinListHTML(pins,true)}
+  }
+  v.innerHTML=h+'</div>';v.scrollTop=sc;
+  if(focusQ){const q=$('#q');if(q){q.focus();q.setSelectionRange(sel,sel)}}
+}
+function pinListHTML(pins,showSheet){
+  const q=filt.q.toLowerCase(),today=new Date().toISOString().slice(0,10);
+  const list=pins.filter(({p})=>(filt.st==='all'||(filt.st==='open'?p.status!=='lokid':p.status===filt.st))&&(!q||[p.title,p.desc,p.assignee].join(' ').toLowerCase().includes(q)))
+    .sort((a,b)=>(a.p.status==='lokid')-(b.p.status==='lokid')||(a.p.due||'9').localeCompare(b.p.due||'9')||(b.p.createdAt||0)-(a.p.createdAt||0));
+  const chip=(k,l)=>`<button class="chip ${filt.st===k?'on':''}" data-filt="${k}">${l}</button>`;
+  return`<div class="chips">${chip('open','Ólokið')}${chip('opid','Opið')}${chip('vinnsla','Í vinnslu')}${chip('lokid','Lokið')}${chip('all','Allt')}</div>
+  <input class="search" id="q" placeholder="Leita í punktum…" value="${esc(filt.q)}">
+  <div class="card rows" style="margin-top:12px">${list.length?list.map(({fid,pid,p,name})=>{const st=ST[p.status]||ST.opid,late=p.due&&p.status!=='lokid'&&p.due<today;
+    return`<div class="row" data-pinrow="${esc(pid)}" data-fid="${esc(fid)}"><span class="pnum" style="background:${st.c}">${p.n}</span><div class="grow"><b>${esc(p.title||'Ónefndur punktur')}</b><small>${showSheet?esc(name)+(p.page>1?` bls. ${p.page}`:'')+' · ':''}${st.l}${p.assignee?' · '+esc(p.assignee):''}${p.due?` · <span style="${late?'color:#d23a3f;font-weight:600':''}">${fmtD(p.due)}</span>`:''}</small></div><span class="chev">›</span></div>`}).join(''):'<div class="empty">Engir punktar hér.</div>'}</div>`;
+}
+$('#view').addEventListener('click',safe(async e=>{
+  const t=e.target;let el;
+  if(el=t.closest('[data-crumb]'))return openFolder(+el.dataset.crumb);
+  if(el=t.closest('[data-folder]'))return openFolder(0,items.find(i=>i.id===el.dataset.folder));
+  if(el=t.closest('[data-sheet]'))return openSheet(items.find(i=>i.id===el.dataset.sheet));
+  if(el=t.closest('[data-tab]')){folderTab=el.dataset.tab;if(folderTab==='punktar')allScAt=0;return renderFolder(true)}
+  if(el=t.closest('[data-filt]')){filt.st=el.dataset.filt;return renderFolder(false)}
+  if(el=t.closest('[data-pinrow]')){const it=await gj(`${D()}/items/${el.dataset.fid}`);const p=SC.get(el.dataset.fid).d.pins[el.dataset.pinrow];return openSheet(it,p&&p.page,el.dataset.pinrow)}
+  if(el=t.closest('[data-act]')){const a=el.dataset.act;if(a==='newfolder')newFolder();if(a==='upload')pickSheets()}
+}));
+$('#view').addEventListener('input',e=>{if(e.target.id==='q'){filt.q=e.target.value;renderFolder(false)}});
+$('#back').onclick=()=>{if(view==='sheet'){flushAll();return openFolder(trail.length-1)}if(trail.length>1)openFolder(trail.length-2)};
+$('#menu').onclick=()=>{
+  const L=[];const f=curFolder();
+  if(view==='folder'){
+    if(trail.length===1)L.push({label:'＋ Nýtt verkefni',fn:newFolder});
+    else L.push({label:'＋ Ný mappa',fn:newFolder},{label:'⬆ Hlaða upp teikningu / mynd',fn:pickSheets},{label:'✎ Endurnefna möppu',fn:renameFolder},{label:'🗑 Eyða möppu',danger:true,fn:deleteFolder});
+    L.push({label:'↗ Opna möppuna í OneDrive',fn:()=>window.open((f.item&&f.item.webUrl)||'#','_blank')});
+  }
+  if(view==='sheet'&&curSheet)L.push({label:'↗ Opna skrána í OneDrive',fn:()=>window.open(curSheet.webUrl,'_blank')},{label:'🗑 Eyða teikningu',danger:true,fn:deleteSheet});
+  L.push({label:'☁️ Skipta um geymslu ('+cfg.driveName+')',fn:pickDrive},{label:'⎋ Skrá út ('+(me.name||me.email)+')',fn:logout});
+  actions(L);
+};
+async function newFolder(){
+  const root=trail.length===1;
+  const r=await ask({title:root?'Nýtt verkefni':'Ný mappa',fields:[{label:'Heiti',ph:root?'t.d. Hverfisgata 12':'t.d. 2. hæð – Rafmagn'}],ok:'Stofna'});
+  if(!r||!r[0])return;
+  const it=await mkdir(curFolder().id,r[0]);toast('Mappa stofnuð í OneDrive');openFolder(0,it);
+}
+async function renameFolder(){
+  const f=curFolder();const r=await ask({title:'Endurnefna möppu',fields:[{label:'Heiti',value:f.name}],ok:'Vista'});if(!r||!r[0])return;
+  const it=await gj(`${D()}/items/${f.id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:safeName(r[0])})});
+  f.name=it.name;f.item=it;openFolder(trail.length-1);
+}
+async function deleteFolder(){
+  const f=curFolder();
+  const ok=await ask({title:'Eyða möppu?',text:`„${f.name}“ og allt sem í henni er fer í ruslafötu OneDrive (hægt að endurheimta þar).`,ok:'Eyða',danger:true});if(!ok)return;
+  await gj(`${D()}/items/${f.id}`,{method:'DELETE'});toast('Möppu eytt');openFolder(trail.length-2);
+}
+async function deleteSheet(){
+  const s=curSheet;const ok=await ask({title:'Eyða teikningu?',text:`„${s.name}“ fer í ruslafötu OneDrive. Punktarnir fylgja með og eyðast.`,ok:'Eyða',danger:true});if(!ok)return;
+  await gj(`${D()}/items/${s.id}`,{method:'DELETE'});
+  try{const sc=await childByName(gogn.id,s.id+'.json');if(sc)await gj(`${D()}/items/${sc.id}`,{method:'DELETE'})}catch(e){}
+  SC.delete(s.id);openFolder(trail.length-1);
+}
+
+/* ---------------- upphleðsla ---------------- */
+const toBlob=(c,t,q)=>new Promise(r=>c.toBlob(r,t,q));
+const loadImg=src=>new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('Gat ekki lesið myndina'));i.src=src});
+async function shrink(file,max){
+  const u=URL.createObjectURL(file);
+  try{const im=await loadImg(u);let w=im.naturalWidth,h=im.naturalHeight;const k=Math.min(1,max/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);
+    const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);return toBlob(c,'image/jpeg',.85)}
+  finally{URL.revokeObjectURL(u)}
+}
+function pickSheets(){$('#sheetIn').value='';$('#sheetIn').click()}
+$('#sheetIn').onchange=safe(async e=>{
+  const files=[...e.target.files],fid=curFolder().id;if(!files.length)return;
+  let n=0;
+  for(const f of files){
+    toast(`Hleð upp ${f.name}…`,120000);
+    try{await uploadFile(fid,f.name,f,p=>toast(`Hleð upp ${f.name} – ${Math.round(p*100)}%`,120000));n++}
+    catch(err){if(err instanceof AuthErr)throw err;toast(`Gat ekki hlaðið upp ${f.name}: ${err.message}`,5000)}
+  }
+  if(n){toast(n===1?'Teikning komin í OneDrive':`${n} skrár komnar í OneDrive`);if(view==='folder'&&curFolder().id===fid)openFolder(trail.length-1)}
+});
+$('#photoIn').onchange=safe(async e=>{
+  const files=[...e.target.files],pid=openPinId,s=curSheet;if(!files.length||!pid||!s)return;
+  toast('Hleð upp mynd…',120000);
+  const dir=await ensureDir(s.parentReference.id,PHOTO_DIR);
+  const rec=SC.get(s.id),p=rec.d.pins[pid];
+  const stampStr=new Date().toISOString().slice(0,16).replace('T',' ').replace(':','');
+  const added=[];
+  for(const f of files){const blob=await shrink(f,2000);const base=s.name.replace(/\.[^.]+$/,'');const it=await uploadFile(dir.id,`${base} – punktur ${p.n} – ${stampStr}.jpg`,blob);added.push({id:it.id,name:it.name})}
+  editPin(pid,{photos:[...(rec.d.pins[pid].photos||[]),...added]});toast('Mynd vistuð í „'+PHOTO_DIR+'“');
+});
+
+/* ---------------- teikning: skoðun, þysjun, punktar ---------------- */
+let vz={s:1,x:0,y:0},fitS=1,vw=null,vin=null,page=1,pages=1,dims={w:1,h:1},addMode=false,moveMode=null,openPinId=null,pollT=null;
+const pdfDocs=new Map(),pageImgs=new Map();
+const PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+let pdfP=null;
+function loadPdfjs(){if(pdfP)return pdfP;pdfP=new Promise((res,rej)=>{const s=document.createElement('script');s.src=PDFJS+'pdf.min.js';s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js';res(window.pdfjsLib)};s.onerror=()=>{pdfP=null;rej(new Error('Gat ekki hlaðið PDF-lesara'))};document.head.appendChild(s)});return pdfP}
+const isPdf=it=>/pdf/.test((it.file&&it.file.mimeType)||'')||/\.pdf$/i.test(it.name);
+async function pageImage(it,pg){
+  const key=it.id+':'+(it.eTag||'')+':'+pg;if(pageImgs.has(key))return pageImgs.get(key);
+  let out;
+  if(isPdf(it)){
+    let pdf=pdfDocs.get(it.id+(it.eTag||''));
+    if(!pdf){const lib=await loadPdfjs();const blob=await fileBlob(it.id);pdf=await lib.getDocument({data:await blob.arrayBuffer()}).promise;pdfDocs.set(it.id+(it.eTag||''),pdf)}
+    pages=pdf.numPages;
+    const p=await pdf.getPage(pg),v1=p.getViewport({scale:1}),sc=Math.min(3200/Math.max(v1.width,v1.height),5),vp=p.getViewport({scale:sc});
+    const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+    await p.render({canvasContext:x,viewport:vp}).promise;
+    out={url:URL.createObjectURL(await toBlob(c,'image/png')),w:c.width,h:c.height,pages:pdf.numPages};
+  }else{
+    const u=URL.createObjectURL(await fileBlob(it.id));const im=await loadImg(u);out={url:u,w:im.naturalWidth,h:im.naturalHeight,pages:1};
+  }
+  pageImgs.set(key,out);return out;
+}
+async function openSheet(it,pg,pinId){
+  if(!it)return;closePanel();view='sheet';curSheet=it;page=pg||1;addMode=false;moveMode=null;
+  setHeader(it.name,curFolder().name,true);
+  const v=$('#view');v.classList.add('full');v.innerHTML='<div class="loading"><span class="spin"></span></div>';
+  const [rec,img]=await Promise.all([loadSc(it.id),pageImage(it,page)]);
+  if(curSheet!==it)return;
+  if(rec.changed!==undefined)rec.changed=false;
+  pages=img.pages;dims={w:img.w,h:img.h};
+  v.innerHTML=`<div class="viewer" id="vw"><div class="inner" id="vin" style="width:${img.w}px;height:${img.h}px"><img src="${img.url}" width="${img.w}" height="${img.h}" alt=""><div id="pins"></div></div></div>
+  <div class="hint" id="hint" hidden></div>
+  <div class="vbar"><button data-v="add">＋ Punktur</button>${pages>1?`<span class="pg"><button data-v="prev">‹</button>bls. ${page}/${pages}<button data-v="next">›</button></span>`:''}<button data-v="list">☰ Punktar</button><button data-v="fit">⤢</button></div>`;
+  vw=$('#vw');vin=$('#vin');setupViewer();fit();renderPins();updateVbar();
+  $('.vbar').onclick=safe(async e=>{const b=e.target.closest('[data-v]');if(!b)return;const a=b.dataset.v;
+    if(a==='add'){addMode=!addMode;moveMode=null;if(addMode)closePanel();updateVbar()}
+    if(a==='fit')fit();
+    if(a==='list')showSheetList();
+    if(a==='prev'&&page>1)openSheet(it,page-1);
+    if(a==='next'&&page<pages)openSheet(it,page+1);
+  });
+  if(pinId)openPin(pinId,true);
+  clearInterval(pollT);pollT=setInterval(poll,20000);
+}
+async function poll(){
+  if(view!=='sheet'||!curSheet||document.hidden)return;
+  try{const id=curSheet.id;const r=await loadSc(id,true);if(r.changed){r.changed=false;if(curSheet&&curSheet.id===id)render()}}catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll();else flushAll()});
+addEventListener('pagehide',flushAll);
+function flushAll(){for(const[id,r]of SC)if(r.dirty)flush(id)}
+function applyZ(){vin.style.transform=`translate(${vz.x}px,${vz.y}px) scale(${vz.s})`;vin.style.setProperty('--inv',1/vz.s)}
+function fit(){if(!vw)return;const r=vw.getBoundingClientRect();fitS=Math.min(r.width/dims.w,(r.height-70)/dims.h)*.95;vz={s:fitS,x:(r.width-dims.w*fitS)/2,y:(r.height-70-dims.h*fitS)/2+6};applyZ()}
+const clampS=s=>Math.max(fitS*.5,Math.min(s,Math.max(4,fitS*12)));
+function zoomAt(px,py,ns){ns=clampS(ns);vz.x=px-(px-vz.x)*(ns/vz.s);vz.y=py-(py-vz.y)*(ns/vz.s);vz.s=ns;applyZ()}
+function focusPin(p){if(!vw)return;const r=vw.getBoundingClientRect();vz.s=Math.max(vz.s,Math.min(fitS*3,Math.max(1,fitS)));const wide=innerWidth>=900;const cx=wide?(r.width-400)/2:r.width/2,cy=wide?r.height/2:r.height*.2;vz.x=cx-p.x*dims.w*vz.s;vz.y=cy-p.y*dims.h*vz.s;applyZ()}
+function setupViewer(){
+  const ptrs=new Map();let gs=null;
+  const rel=e=>{const r=vw.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+  vw.addEventListener('wheel',e=>{e.preventDefault();const p=rel(e);zoomAt(p.x,p.y,vz.s*Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015)))},{passive:false});
+  vw.addEventListener('pointerdown',e=>{ptrs.set(e.pointerId,rel(e));
+    if(ptrs.size===1){const p=rel(e);gs={t:'pan',sx:p.x,sy:p.y,ox:vz.x,oy:vz.y,moved:false,target:e.target}}
+    else if(ptrs.size===2){const[a,b]=[...ptrs.values()];gs={t:'pinch',d0:Math.hypot(a.x-b.x,a.y-b.y)||1,m0:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},s0:vz.s,ox:vz.x,oy:vz.y}}});
+  vw.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId)||!gs)return;ptrs.set(e.pointerId,rel(e));
+    if(gs.t==='pan'&&ptrs.size===1){const p=rel(e),dx=p.x-gs.sx,dy=p.y-gs.sy;if(!gs.moved&&Math.hypot(dx,dy)>7)gs.moved=true;if(gs.moved){vz.x=gs.ox+dx;vz.y=gs.oy+dy;applyZ()}}
+    else if(gs.t==='pinch'&&ptrs.size>=2){const[a,b]=[...ptrs.values()];const d=Math.hypot(a.x-b.x,a.y-b.y),m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};const ns=clampS(gs.s0*d/gs.d0);vz.x=m.x-(gs.m0.x-gs.ox)*(ns/gs.s0);vz.y=m.y-(gs.m0.y-gs.oy)*(ns/gs.s0);vz.s=ns;applyZ()}});
+  const up=e=>{if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);
+    if(gs&&gs.t==='pan'&&!gs.moved&&e.type==='pointerup')tap(e,gs.target);
+    if(ptrs.size===1){const p=[...ptrs.values()][0];gs={t:'pan',sx:p.x,sy:p.y,ox:vz.x,oy:vz.y,moved:true}}else if(!ptrs.size)gs=null};
+  vw.addEventListener('pointerup',up);vw.addEventListener('pointercancel',up);
+}
+function tap(e,target){
+  const pinEl=target&&target.closest&&target.closest('.pin');
+  const r=vw.getBoundingClientRect(),p={x:(e.clientX-r.left-vz.x)/vz.s/dims.w,y:(e.clientY-r.top-vz.y)/vz.s/dims.h};
+  const inside=p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1;
+  if(moveMode){if(inside){const id=moveMode;moveMode=null;editPin(id,{x:p.x,y:p.y});updateVbar();openPin(id)}return}
+  if(pinEl)return openPin(pinEl.dataset.pin);
+  if(addMode){if(!inside)return toast('Settu punktinn á teikninguna');createPin(p.x,p.y);return}
+  if(openPinId)closePanel();
+}
+const sheetPins=()=>{const rec=curSheet&&SC.get(curSheet.id);return rec?livePins(rec.d).filter(([,p])=>(p.page||1)===page).sort((a,b)=>a[1].n-b[1].n):[]};
+function createPin(x,y){
+  const rec=SC.get(curSheet.id);stamp(rec,curSheet);
+  const n=livePins(rec.d).filter(([,p])=>(p.page||1)===page).reduce((m,[,p])=>Math.max(m,p.n||0),0)+1,id=uid(),now=Date.now();
+  rec.d.pins[id]={n,page,x,y,title:'',desc:'',status:'opid',assignee:'',due:'',photos:[],createdAt:now,updatedAt:now,createdBy:me.name||me.email};
+  touch(curSheet.id);addMode=false;updateVbar();renderPins();openPin(id);setTimeout(()=>{const t=$('#p-title');if(t)t.focus()},260);
+}
+function editPin(pid,ch){const rec=SC.get(curSheet.id);if(!rec||!rec.d.pins[pid])return;stamp(rec,curSheet);rec.d.pins[pid]={...rec.d.pins[pid],...ch,updatedAt:Date.now(),updatedBy:me.name||me.email};touch(curSheet.id);render()}
+function renderPins(){const box=$('#pins');if(!box)return;box.innerHTML=sheetPins().map(([id,p])=>`<div class="pin ${id===openPinId?'sel':''}" data-pin="${esc(id)}" style="left:${p.x*100}%;top:${p.y*100}%;--c:${(ST[p.status]||ST.opid).c}"><span>${p.n}</span></div>`).join('')}
+function updateVbar(){
+  const b=document.querySelector('[data-v="add"]');if(b)b.classList.toggle('on',addMode);
+  const l=document.querySelector('[data-v="list"]');if(l){const o=openCount(sheetPins());l.textContent=`☰ Punktar${o?` (${o})`:''}`}
+  const h=$('#hint');if(h){h.hidden=!(addMode||moveMode);h.textContent=moveMode?'Pikkaðu þar sem punkturinn á að vera':'Pikkaðu á teikninguna til að setja punkt'}
+  if(vw)vw.classList.toggle('adding',!!(addMode||moveMode));
+}
+function render(){if(view==='sheet'){renderPins();updateVbar();if($('#panel').classList.contains('open'))renderPanel(false)}else if(view==='folder')renderFolder(false)}
+function showSheetList(){
+  openPinId=null;renderPins();$('#panel').dataset.mode='list';
+  $('#pbody').innerHTML=`<div class="ph"><b style="flex:1;font-size:17px">Punktar${pages>1?` á bls. ${page}`:''}</b><button class="x" data-pa="close">✕</button></div><div id="slist">${pinListHTML(sheetPins().map(([pid,p])=>({fid:curSheet.id,pid,p})),false)}</div>`;
+  $('#panel').classList.add('open');
+}
+function openPin(id,focus){
+  openPinId=id;$('#panel').dataset.mode='pin';renderPanel(true);$('#panel').classList.add('open');renderPins();
+  const rec=SC.get(curSheet.id),p=rec&&rec.d.pins[id];if(p&&(focus||innerWidth<900))setTimeout(()=>focusPin(p),focus?60:0);
+}
+function closePanel(){flushFields();$('#panel').classList.remove('open');if(openPinId){openPinId=null;renderPins()}}
+function renderPanel(full){
+  const pb=$('#pbody');
+  if($('#panel').dataset.mode==='list'){const sl=$('#slist');if(sl&&!(document.activeElement&&document.activeElement.id==='q'))sl.innerHTML=pinListHTML(sheetPins().map(([pid,p])=>({fid:curSheet.id,pid,p})),false);return}
+  const rec=SC.get(curSheet.id),id=openPinId,p=rec&&rec.d.pins[id];if(!p||p.deleted){closePanel();return}
+  const st=ST[p.status]||ST.opid;
+  const notes=Object.entries(rec.d.notes).filter(([,n])=>n.pinId===id&&!n.deleted).sort((a,b)=>a[1].createdAt-b[1].createdAt);
+  const photosHTML=(p.photos||[]).map(ph=>`<div class="ph1" data-photo="${esc(ph.id)}"></div>`).join('')+`<button class="addp" data-pa="photo" aria-label="Bæta við mynd">📷</button>`;
+  const notesHTML=notes.length?notes.map(([nid,n])=>`<div class="note"><div class="who"><b>${esc(n.by===(me.name||me.email)?'Þú':n.by||'Notandi')}</b> · ${fmt(n.createdAt)}</div><p>${esc(n.text)}</p></div>`).join(''):'<div style="color:var(--mut);font-size:14px;margin-bottom:6px">Engar athugasemdir enn.</div>';
+  const seg=Object.entries(ST).map(([k,v])=>`<button data-pa="st" data-v="${k}" class="${p.status===k?'on':''}" style="${p.status===k?`background:${v.c}`:''}">${v.l}</button>`).join('');
+  if(full){
+    pb.innerHTML=`<div class="ph"><span class="pnum" id="p-num" style="background:${st.c}">${p.n}</span><input id="p-title" placeholder="Heiti punkts, t.d. Vantar þéttingu" value="${esc(p.title)}"><button class="x" data-pa="close">✕</button></div>
+    <div class="seg" id="p-seg">${seg}</div>
+    <label class="fl">Lýsing<textarea id="p-desc" placeholder="Hvað þarf að gera?">${esc(p.desc)}</textarea></label>
+    <div class="row2"><label class="fl">Ábyrgð<input id="p-assignee" placeholder="Nafn / fyrirtæki" value="${esc(p.assignee)}"></label><label class="fl">Frestur<input id="p-due" type="date" value="${esc(p.due)}"></label></div>
+    <div class="fl">Myndir</div><div class="photos" id="p-photos">${photosHTML}</div>
+    <div class="fl" style="margin-top:16px">Athugasemdir</div><div id="p-notes">${notesHTML}</div>
+    <div class="noteform"><textarea id="p-note" placeholder="Skrifa athugasemd…"></textarea><button class="btn" data-pa="send">Senda</button></div>
+    <div class="meta">Stofnað af ${esc(p.createdBy||'')} · ${fmt(p.createdAt)}${p.updatedBy?` · síðast breytt af ${esc(p.updatedBy)}`:''}</div>
+    <div class="pbtns"><button class="btn ghost" data-pa="move">✥ Færa punkt</button><button class="btn danger" data-pa="del">Eyða punkti</button></div>`;
+    $('#p-photos').dataset.k=photosHTML;$('#p-notes').dataset.k=notesHTML;
+  }else{
+    const n=$('#p-num');if(!n)return renderPanel(true);n.style.background=st.c;n.textContent=p.n;
+    document.querySelectorAll('#p-seg button').forEach(b=>{const on=b.dataset.v===p.status;b.classList.toggle('on',on);b.style.background=on?ST[b.dataset.v].c:''});
+    for(const f of['title','desc','assignee','due']){const el=$('#p-'+f);if(el&&document.activeElement!==el&&!(f in pending))el.value=p[f]||''}
+    const ph=$('#p-photos');if(ph.dataset.k!==photosHTML){ph.innerHTML=photosHTML;ph.dataset.k=photosHTML}
+    const nt=$('#p-notes');if(nt.dataset.k!==notesHTML){nt.innerHTML=notesHTML;nt.dataset.k=notesHTML}
+  }
+  document.querySelectorAll('#p-photos [data-photo]').forEach(async el=>{const u=await thumbUrl(el.dataset.photo);if(u)el.style.backgroundImage=`url('${u}')`});
+}
+const pending={};let fieldT=null;
+function queueField(f,v){pending[f]=v;clearTimeout(fieldT);fieldT=setTimeout(flushFields,600)}
+function flushFields(){clearTimeout(fieldT);const ch={...pending};for(const k in pending)delete pending[k];if(openPinId&&curSheet&&Object.keys(ch).length)editPin(openPinId,ch)}
+$('#pbody').addEventListener('input',e=>{const m=e.target.id&&e.target.id.match(/^p-(title|desc|assignee|due)$/);if(m)queueField(m[1],e.target.value);if(e.target.id==='q'){filt.q=e.target.value;const sl=$('#slist');if(sl){sl.innerHTML=pinListHTML(sheetPins().map(([pid,p])=>({fid:curSheet.id,pid,p})),false);const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}}});
+$('#pbody').addEventListener('focusout',e=>{if(/^p-/.test(e.target.id||''))flushFields()});
+$('#pbody').addEventListener('click',safe(async e=>{
+  const t=e.target;let el;
+  if(el=t.closest('[data-filt]')){filt.st=el.dataset.filt;$('#slist').innerHTML=pinListHTML(sheetPins().map(([pid,p])=>({fid:curSheet.id,pid,p})),false);return}
+  if(el=t.closest('[data-pinrow]'))return openPin(el.dataset.pinrow,true);
+  if(el=t.closest('[data-photo]')){const ph=el.dataset.photo,pid=openPinId;const u=await thumbUrl(ph,'large');return lightbox(u,async()=>{const ok=await ask({title:'Fjarlægja mynd af punkti?',text:'Myndin sjálf verður áfram í möppunni „'+PHOTO_DIR+'“ í OneDrive.',ok:'Fjarlægja',danger:true});if(!ok)return;const p=SC.get(curSheet.id).d.pins[pid];editPin(pid,{photos:(p.photos||[]).filter(x=>x.id!==ph)})})}
+  if(!(el=t.closest('[data-pa]')))return;
+  const a=el.dataset.pa,id=openPinId;
+  if(a==='close')return closePanel();
+  if(a==='st'){flushFields();return editPin(id,{status:el.dataset.v})}
+  if(a==='photo'){flushFields();$('#photoIn').value='';return $('#photoIn').click()}
+  if(a==='send'){const ta=$('#p-note'),txt=ta.value.trim();if(!txt)return;ta.value='';const rec=SC.get(curSheet.id);const now=Date.now();rec.d.notes[uid()]={pinId:id,text:txt,by:me.name||me.email,createdAt:now,updatedAt:now};touch(curSheet.id);render();return}
+  if(a==='move'){flushFields();moveMode=id;addMode=false;$('#panel').classList.remove('open');updateVbar();return}
+  if(a==='del'){const p=SC.get(curSheet.id).d.pins[id];const ok=await ask({title:`Eyða punkti ${p.n}?`,text:'Punkturinn og athugasemdir hans hverfa. Myndir verða áfram í OneDrive.',ok:'Eyða',danger:true});if(!ok)return;closePanel();editPin(id,{deleted:true})}
+}));
+$('#pbody').addEventListener('keydown',e=>{if(e.target.id==='p-note'&&e.key==='Enter'&&(e.metaKey||e.ctrlKey)){e.preventDefault();document.querySelector('[data-pa="send"]').click()}});
+addEventListener('resize',()=>{if(view==='sheet'&&vw&&!openPinId)fit()});
+addEventListener('beforeunload',e=>{if([...SC.values()].some(r=>r.dirty||r.saving)){flushAll();e.preventDefault();e.returnValue=''}});
+
+/* ---------------- ræsing ---------------- */
+(async()=>{
+  if(!/^[0-9a-f-]{36}$/i.test(CONFIG.clientId))return showSetup();
+  try{await handleRedirect()}catch(e){return showLogin(e.message)}
+  if(!tok)return showLogin();
+  try{
+    const u=await gj('/me?$select=displayName,mail,userPrincipalName');me={name:u.displayName||'',email:u.mail||u.userPrincipalName||''};
+    try{await initDrive()}catch(e){if(e instanceof AuthErr)throw e;if(cfg.driveBase!=='/me/drive'){toast('Gat ekki opnað „'+cfg.driveName+'“ – nota mitt OneDrive',5000);cfg={driveBase:'/me/drive',driveName:'Mitt OneDrive'};ls.set('vp_cfg',cfg);await initDrive()}else throw e}
+    setSync();openFolder(0);
+  }catch(e){if(e instanceof AuthErr)return showLogin();console.error(e);$('#view').innerHTML=`<div class="center"><h1>Villa</h1><p>${esc(e.message)}</p><button class="btn" onclick="location.reload()">Reyna aftur</button></div>`}
+})();
+</script>
+</body>
+</html>
