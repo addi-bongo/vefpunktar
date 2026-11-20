@@ -149,6 +149,12 @@ textarea{resize:vertical;min-height:64px}
 @keyframes sp{to{transform:rotate(360deg)}}
 .drive{font-size:12px;color:var(--mut);margin:-8px 0 14px}
 a.row{color:inherit;text-decoration:none}
+#dlg.open~#toast{bottom:auto;top:70px}
+.cdot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle;flex:none}
+.cathd{display:flex;align-items:center;font-weight:600;font-size:14px;margin:18px 0 8px}
+.cathd small{color:var(--mut);font-weight:500;margin-left:6px}
+.tcat{position:absolute;top:8px;left:8px;border:0;background:#ffffffee;border-radius:8px;width:32px;height:32px;font-size:14px;box-shadow:0 1px 3px #0003;display:grid;place-items:center}
+.tile .cl{font-size:11px;color:var(--mut);padding:0 10px 8px;margin-top:-4px;display:flex;align-items:center}
 </style>
 </head>
 <body>
@@ -186,6 +192,8 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const CATS=[['Arkitektúr','#4f6bed'],['Burðarvirki','#8b5cf6'],['Lagnir','#0ea5e9'],['Rafmagn','#d4a106'],['Loftræsting','#14b8a6'],['Innréttingar','#ec4899'],['Lóð','#22c55e'],['Annað','#6b7280']];
+const catColor=c=>{const f=CATS.find(x=>x[0]===c);if(f)return f[1];let h=0;for(const ch of String(c))h=(h*31+ch.charCodeAt(0))%360;return c?`hsl(${h},55%,45%)`:'#9aa0a8'};
 const ST={opid:{l:'Opið',c:'#e5484d'},vinnsla:{l:'Í vinnslu',c:'#f5a524'},lokid:{l:'Lokið',c:'#30a46c'}};
 const fmt=ts=>ts?new Date(ts).toLocaleString('is-IS',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
 const fmtD=d=>d?new Date(d+'T12:00').toLocaleDateString('is-IS',{day:'numeric',month:'short'}):'';
@@ -413,7 +421,7 @@ async function useDrive(base,name){
 }
 
 /* ---------------- möppur ---------------- */
-let trail=[],view='folder',folderTab='skjol',filt={st:'open',q:''},items=[],curSheet=null;
+let trail=[],view='folder',folderTab='skjol',filt={st:'open',q:'',cat:''},filtCat='',items=[],curSheet=null;
 const isDrawing=i=>i.file&&(/^image\//.test(i.file.mimeType||'')||/pdf/.test(i.file.mimeType||'')||/\.(pdf|png|jpe?g|webp|gif|heic)$/i.test(i.name));
 const hidden=i=>i.name===DATA_DIR||i.name===PHOTO_DIR||i.name.startsWith('.');
 const curFolder=()=>trail[trail.length-1];
@@ -448,24 +456,70 @@ function renderFolder(reset){
   <div class="tabs"><button data-tab="skjol" class="${folderTab==='skjol'?'on':''}">Skjöl</button><button data-tab="punktar" class="${folderTab==='punktar'?'on':''}">Punktar</button></div>`;
   if(folderTab==='skjol'){
     h+=`<h3>Möppur</h3><div class="card rows">${subs.map(s=>`<div class="row" data-folder="${esc(s.id)}"><div class="ico">📁</div><div class="grow"><b>${esc(s.name)}</b><small>${s.folder.childCount} atriði</small></div><span class="chev">›</span></div>`).join('')}<div class="addrow" data-act="newfolder">＋ Ný mappa</div></div>
-    <h3>Teikningar og myndir</h3><div class="grid">${draws.map(it=>{const rec=SC.get(it.id),pins=rec?livePins(rec.d):[],o=openCount(pins);const th=it.thumbnails&&it.thumbnails[0]&&(it.thumbnails[0].large||it.thumbnails[0].medium);
-      return`<div class="tile" data-sheet="${esc(it.id)}"><div class="th" style="${th?`background-image:url('${esc(th.url)}')`:''}">${th?'':'<div style="display:grid;place-items:center;height:100%;font-size:30px">📄</div>'}</div><div class="nm">${esc(it.name)}</div>${o?`<span class="badge">${o}</span>`:pins.length?'<span class="badge ok">✓</span>':''}</div>`}).join('')}
-    <div class="tile add" data-act="upload"><span>＋</span>Hlaða upp teikningu<br>(PDF eða mynd)</div></div>`;
+    <h3>Teikningar og myndir</h3>`;
+    h+=drawingsHTML(draws);
     if(others.length)h+=`<h3>Önnur skjöl</h3><div class="card rows">${others.map(o=>`<a class="row" href="${esc(o.webUrl)}" target="_blank" rel="noopener"><div class="ico">📎</div><div class="grow"><b>${esc(o.name)}</b><small>Opnast í Office / OneDrive</small></div><span class="chev">↗</span></a>`).join('')}</div>`;
   }else{
     const base=normPath(f.item.parentReference&&f.item.parentReference.path)+'/'+f.item.name+'/';
     if(!allScAt){h+='<div class="empty"><span class="spin"></span><br>Sæki punkta…</div>';loadAllSc().then(()=>{if(view==='folder'&&folderTab==='punktar')renderFolder(false)}).catch(safe(e=>{throw e}))}
-    else{const pins=[];for(const[fid,rec]of SC)if((rec.d.path||'').startsWith(base))for(const[pid,p]of livePins(rec.d))pins.push({fid,pid,p,name:rec.d.name});h+=pinListHTML(pins,true)}
+    else{const pins=[];for(const[fid,rec]of SC)if((rec.d.path||'').startsWith(base))for(const[pid,p]of livePins(rec.d))pins.push({fid,pid,p,name:rec.d.name,cat:rec.d.category||''});h+=pinListHTML(pins,true)}
   }
   v.innerHTML=h+'</div>';v.scrollTop=sc;
   if(focusQ){const q=$('#q');if(q){q.focus();q.setSelectionRange(sel,sel)}}
 }
+const catOf=id=>{const r=SC.get(id);return(r&&r.d.category)||''};
+const catOrder=c=>{const i=CATS.findIndex(x=>x[0]===c);return c===''?999:i<0?100:i};
+const sortCats=a=>a.sort((x,y)=>catOrder(x)-catOrder(y)||x.localeCompare(y,'is'));
+function tileHTML(it,showCat){
+  const rec=SC.get(it.id),pins=rec?livePins(rec.d):[],o=openCount(pins),c=catOf(it.id);const th=it.thumbnails&&it.thumbnails[0]&&(it.thumbnails[0].large||it.thumbnails[0].medium);
+  return`<div class="tile" data-sheet="${esc(it.id)}"><div class="th" style="${th?`background-image:url('${esc(th.url)}')`:''}">${th?'':'<div style="display:grid;place-items:center;height:100%;font-size:30px">📄</div>'}</div><div class="nm">${esc(it.name)}</div>${showCat&&c?`<div class="cl"><span class="cdot" style="background:${catColor(c)}"></span>${esc(c)}</div>`:''}<button class="tcat" data-tcat="${esc(it.id)}" aria-label="Flokkur" title="Breyta flokki">🏷</button>${o?`<span class="badge">${o}</span>`:pins.length?'<span class="badge ok">✓</span>':''}</div>`;
+}
+function drawingsHTML(draws){
+  const addTile='<div class="tile add" data-act="upload"><span>＋</span>Hlaða upp teikningu<br>(PDF eða mynd)</div>';
+  const cats=sortCats([...new Set(draws.map(it=>catOf(it.id)))]);
+  if(!cats.some(c=>c))return`<div class="grid">${draws.map(it=>tileHTML(it,false)).join('')}${addTile}</div>${draws.length?'<p style="color:var(--mut);font-size:13px;margin:10px 2px">Ýttu á 🏷 á teikningu til að setja hana í flokk.</p>':''}`;
+  if(filtCat&&!cats.includes(filtCat==='__none'?'':filtCat))filtCat='';
+  const fchip=(k,l,col)=>`<button class="chip ${filtCat===k?'on':''}" data-fcat="${esc(k)}">${col?`<span class="cdot" style="background:${col}"></span>`:''}${esc(l)}</button>`;
+  let h=`<div class="chips">${fchip('','Allir flokkar')}${cats.map(c=>c?fchip(c,c,catColor(c)):fchip('__none','Óflokkað','#9aa0a8')).join('')}</div>`;
+  const show=filtCat?[filtCat==='__none'?'':filtCat]:cats;
+  for(const c of show){const list=draws.filter(it=>catOf(it.id)===c);if(!list.length)continue;
+    h+=`<div class="cathd"><span class="cdot" style="background:${catColor(c)}"></span>${esc(c||'Óflokkað')}<small>${list.length}</small></div><div class="grid">${list.map(it=>tileHTML(it,false)).join('')}</div>`}
+  return h+`<div class="grid" style="margin-top:14px">${addTile}</div>`;
+}
+function pickCategory(title,current,skipLabel){
+  return new Promise(res=>{
+    const d=$('#dlg'),b=$('#dbox');
+    const known=new Set(CATS.map(c=>c[0]));
+    const custom=sortCats([...new Set([...SC.values()].map(r=>r.d.category).filter(c=>c&&!known.has(c)))]);
+    const all=[...CATS.map(c=>c[0]),...custom];
+    b.innerHTML=`<h4>${esc(title)}</h4><p>Veldu flokk eða búðu til nýjan.</p><div class="chips">${all.map(c=>`<button class="chip ${c===current?'on':''}" data-cat="${esc(c)}"><span class="cdot" style="background:${catColor(c)}"></span>${esc(c)}</button>`).join('')}</div>
+    <label class="fl">Nýr flokkur<input id="newCat" placeholder="t.d. Brunavarnir"></label>
+    <div class="dbtns"><button class="btn ghost" data-cr="x">${esc(skipLabel||'Hætta við')}</button>${current?'<button class="btn ghost" data-cr="none">Enginn</button>':''}<button class="btn" data-cr="ok">Vista</button></div>`;
+    d.classList.add('open');
+    const done=v=>{d.classList.remove('open');d.onclick=null;b.onkeydown=null;res(v)};
+    const okNew=()=>{const v=$('#newCat').value.trim();return done(v?safeName(v).slice(0,40):(current||null))};
+    b.onkeydown=e=>{if(e.key==='Enter'&&e.target.id==='newCat')okNew();if(e.key==='Escape')done(null)};
+    d.onclick=e=>{if(e.target===d)return done(null);let el;
+      if(el=e.target.closest('[data-cat]'))return done(el.dataset.cat);
+      if(el=e.target.closest('[data-cr]')){const k=el.dataset.cr;if(k==='x')return done(null);if(k==='none')return done('');return okNew()}};
+  });
+}
+function guessCat(name){const n=name.toLowerCase();
+  if(/rafm|raflagn|^e[-_ .0-9]/.test(n))return'Rafmagn';if(/loftr|^l[-_ .0-9]/.test(n))return'Loftræsting';if(/lagn|pípu|pipu|^v[-_ .0-9]/.test(n))return'Lagnir';
+  if(/burð|burd|^b[-_ .0-9]/.test(n))return'Burðarvirki';if(/arki|grunnm|útlit|utlit|snið|snid|^a[-_ .0-9]/.test(n))return'Arkitektúr';if(/lóð|lod/.test(n))return'Lóð';if(/innr/.test(n))return'Innréttingar';return''}
+async function setCats(list,cat){
+  await pool(list,4,async it=>{const rec=await loadSc(it.id);rec.d.category=cat;stamp(rec,it);touch(it.id)});
+  render();toast(cat?`Flokkur: ${cat}`:'Flokkur fjarlægður');
+}
+async function editCat(it){const c=await pickCategory('Flokkur: '+it.name,catOf(it.id));if(c!==null)await setCats([it],c)}
 function pinListHTML(pins,showSheet){
   const q=filt.q.toLowerCase(),today=new Date().toISOString().slice(0,10);
-  const list=pins.filter(({p})=>(filt.st==='all'||(filt.st==='open'?p.status!=='lokid':p.status===filt.st))&&(!q||[p.title,p.desc,p.assignee].join(' ').toLowerCase().includes(q)))
+  const pcats=showSheet?sortCats([...new Set(pins.map(x=>x.cat||''))]):[];if(filt.cat&&!pcats.includes(filt.cat==='__none'?'':filt.cat))filt.cat='';
+  const list=pins.filter(({p,cat})=>(!filt.cat||(cat||'')===(filt.cat==='__none'?'':filt.cat))&&(filt.st==='all'||(filt.st==='open'?p.status!=='lokid':p.status===filt.st))&&(!q||[p.title,p.desc,p.assignee].join(' ').toLowerCase().includes(q)))
     .sort((a,b)=>(a.p.status==='lokid')-(b.p.status==='lokid')||(a.p.due||'9').localeCompare(b.p.due||'9')||(b.p.createdAt||0)-(a.p.createdAt||0));
   const chip=(k,l)=>`<button class="chip ${filt.st===k?'on':''}" data-filt="${k}">${l}</button>`;
   return`<div class="chips">${chip('open','Ólokið')}${chip('opid','Opið')}${chip('vinnsla','Í vinnslu')}${chip('lokid','Lokið')}${chip('all','Allt')}</div>
+  ${pcats.some(c=>c)?`<div class="chips" style="margin-top:-4px">${[['','Allir flokkar'],...pcats.map(c=>[c||'__none',c||'Óflokkað'])].map(([k,l])=>`<button class="chip ${filt.cat===k?'on':''}" data-pcat="${esc(k)}">${k?`<span class="cdot" style="background:${catColor(k==='__none'?'':k)}"></span>`:''}${esc(l)}</button>`).join('')}</div>`:''}
   <input class="search" id="q" placeholder="Leita í punktum…" value="${esc(filt.q)}">
   <div class="card rows" style="margin-top:12px">${list.length?list.map(({fid,pid,p,name})=>{const st=ST[p.status]||ST.opid,late=p.due&&p.status!=='lokid'&&p.due<today;
     return`<div class="row" data-pinrow="${esc(pid)}" data-fid="${esc(fid)}"><span class="pnum" style="background:${st.c}">${p.n}</span><div class="grow"><b>${esc(p.title||'Ónefndur punktur')}</b><small>${showSheet?esc(name)+(p.page>1?` bls. ${p.page}`:'')+' · ':''}${st.l}${p.assignee?' · '+esc(p.assignee):''}${p.due?` · <span style="${late?'color:#d23a3f;font-weight:600':''}">${fmtD(p.due)}</span>`:''}</small></div><span class="chev">›</span></div>`}).join(''):'<div class="empty">Engir punktar hér.</div>'}</div>`;
@@ -474,6 +528,9 @@ $('#view').addEventListener('click',safe(async e=>{
   const t=e.target;let el;
   if(el=t.closest('[data-crumb]'))return openFolder(+el.dataset.crumb);
   if(el=t.closest('[data-folder]'))return openFolder(0,items.find(i=>i.id===el.dataset.folder));
+  if(el=t.closest('[data-tcat]')){e.stopPropagation();return editCat(items.find(i=>i.id===el.dataset.tcat))}
+  if(el=t.closest('[data-fcat]')){filtCat=el.dataset.fcat;return renderFolder(false)}
+  if(el=t.closest('[data-pcat]')){filt.cat=el.dataset.pcat;return renderFolder(false)}
   if(el=t.closest('[data-sheet]'))return openSheet(items.find(i=>i.id===el.dataset.sheet));
   if(el=t.closest('[data-tab]')){folderTab=el.dataset.tab;if(folderTab==='punktar')allScAt=0;return renderFolder(true)}
   if(el=t.closest('[data-filt]')){filt.st=el.dataset.filt;return renderFolder(false)}
@@ -489,7 +546,7 @@ $('#menu').onclick=()=>{
     else L.push({label:'＋ Ný mappa',fn:newFolder},{label:'⬆ Hlaða upp teikningu / mynd',fn:pickSheets},{label:'✎ Endurnefna möppu',fn:renameFolder},{label:'🗑 Eyða möppu',danger:true,fn:deleteFolder});
     L.push({label:'↗ Opna möppuna í OneDrive',fn:()=>window.open((f.item&&f.item.webUrl)||'#','_blank')});
   }
-  if(view==='sheet'&&curSheet)L.push({label:'↗ Opna skrána í OneDrive',fn:()=>window.open(curSheet.webUrl,'_blank')},{label:'🗑 Eyða teikningu',danger:true,fn:deleteSheet});
+  if(view==='sheet'&&curSheet)L.push({label:'🏷 Flokkur: '+(catOf(curSheet.id)||'enginn'),fn:()=>editCat(curSheet)},{label:'↗ Opna skrána í OneDrive',fn:()=>window.open(curSheet.webUrl,'_blank')},{label:'🗑 Eyða teikningu',danger:true,fn:deleteSheet});
   L.push({label:'☁️ Skipta um geymslu ('+cfg.driveName+')',fn:pickDrive},{label:'⎋ Skrá út ('+(me.name||me.email)+')',fn:logout});
   actions(L);
 };
@@ -528,13 +585,15 @@ async function shrink(file,max){
 function pickSheets(){$('#sheetIn').value='';$('#sheetIn').click()}
 $('#sheetIn').onchange=safe(async e=>{
   const files=[...e.target.files],fid=curFolder().id;if(!files.length)return;
-  let n=0;
+  let n=0;const up=[];
   for(const f of files){
     toast(`Hleð upp ${f.name}…`,120000);
-    try{await uploadFile(fid,f.name,f,p=>toast(`Hleð upp ${f.name} – ${Math.round(p*100)}%`,120000));n++}
+    try{const it=await uploadFile(fid,f.name,f,p=>toast(`Hleð upp ${f.name} – ${Math.round(p*100)}%`,120000));if(it&&isDrawing(it))up.push(it);n++}
     catch(err){if(err instanceof AuthErr)throw err;toast(`Gat ekki hlaðið upp ${f.name}: ${err.message}`,5000)}
   }
-  if(n){toast(n===1?'Teikning komin í OneDrive':`${n} skrár komnar í OneDrive`);if(view==='folder'&&curFolder().id===fid)openFolder(trail.length-1)}
+  if(n)toast(n===1?'Teikning komin í OneDrive':`${n} skrár komnar í OneDrive`);
+  if(up.length){const c=await pickCategory(up.length===1?'Í hvaða flokk fer teikningin?':`Í hvaða flokk fara ${up.length} teikningar?`,guessCat(up[0].name),'Sleppa');if(c)await setCats(up,c)}
+  if(n&&view==='folder'&&curFolder().id===fid)openFolder(trail.length-1);
 });
 $('#photoIn').onchange=safe(async e=>{
   const files=[...e.target.files],pid=openPinId,s=curSheet;if(!files.length||!pid||!s)return;
