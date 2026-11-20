@@ -157,6 +157,10 @@ textarea{resize:vertical;min-height:64px}
 .drive{font-size:12px;color:var(--mut);margin:-8px 0 14px}
 a.row{color:inherit;text-decoration:none}
 #dlg.open~#toast{bottom:auto;top:70px}
+.pickbtn{display:block;width:100%;margin-top:4px;border:1px solid var(--line);border-radius:10px;padding:9px 10px;font-size:15px;background:#fafbfc;text-align:left;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
+.pickbtn.empty{color:#9aa0a8}
+.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:14px;flex:none;color:#fff}
+.dbox{max-height:92vh;overflow:auto}
 .cdot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle;flex:none}
 .cathd{display:flex;align-items:center;font-weight:600;font-size:14px;margin:18px 0 8px}
 .cathd small{color:var(--mut);font-weight:500;margin-left:6px}
@@ -314,7 +318,8 @@ async function pool(arr,n,fn){let i=0;await Promise.all(Array.from({length:Math.
 const ts=x=>x.updatedAt||x.createdAt||0;
 function mergeSc(remote,local){
   const out={...remote,...local,pins:{...remote.pins},notes:{...remote.notes}};
-  for(const k of['pins','notes'])for(const[id,v]of Object.entries(local[k]))if(!out[k][id]||ts(v)>=ts(out[k][id]))out[k][id]=v;
+  out.people={...(remote.people||{})};
+  for(const k of['pins','notes','people'])for(const[id,v]of Object.entries(local[k]||{}))if(!out[k][id]||ts(v)>=ts(out[k][id]))out[k][id]=v;
   const seen={};
   Object.entries(out.pins).filter(([,p])=>!p.deleted).sort((a,b)=>a[1].createdAt-b[1].createdAt).forEach(([id,p])=>{const pg=p.page||1;seen[pg]=seen[pg]||new Set();if(seen[pg].has(p.n)){const n=Math.max(...seen[pg])+1;out.pins[id]={...p,n,updatedAt:Date.now()};seen[pg].add(n)}else seen[pg].add(p.n)});
   return out;
@@ -344,15 +349,15 @@ const openCount=pins=>pins.filter(([,p])=>p.status!=='lokid').length;
 
 /* ---------------- toast / dialogs ---------------- */
 let tT;function toast(m,ms=2600){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tT);tT=setTimeout(()=>t.classList.remove('show'),ms)}
-function ask({title,text='',fields=[],ok='Í lagi',danger=false,cancel='Hætta við'}){
+function ask({title,text='',fields=[],ok='Í lagi',danger=false,cancel='Hætta við',extra=''}){
   return new Promise(res=>{
     const d=$('#dlg'),b=$('#dbox');
-    b.innerHTML=`<h4>${esc(title)}</h4>${text?`<p>${esc(text)}</p>`:''}${fields.map((f,i)=>`<label class="fl">${esc(f.label||'')}<input data-i="${i}" type="${f.type||'text'}" value="${esc(f.value||'')}" placeholder="${esc(f.ph||'')}"></label>`).join('')}<div class="dbtns">${cancel?`<button class="btn ghost" data-r="0">${esc(cancel)}</button>`:''}<button class="btn ${danger?'danger':''}" data-r="1">${esc(ok)}</button></div>`;
+    b.innerHTML=`<h4>${esc(title)}</h4>${text?`<p>${esc(text)}</p>`:''}${fields.map((f,i)=>`<label class="fl">${esc(f.label||'')}<input data-i="${i}" type="${f.type||'text'}" value="${esc(f.value||'')}" placeholder="${esc(f.ph||'')}"${f.list?` list="dl${i}"`:''}>${f.list?`<datalist id="dl${i}">${f.list.map(o=>`<option value="${esc(o)}">`).join('')}</datalist>`:''}</label>`).join('')}<div class="dbtns">${extra?`<button class="btn danger" data-r="2">${esc(extra)}</button>`:''}${cancel?`<button class="btn ghost" data-r="0">${esc(cancel)}</button>`:''}<button class="btn ${danger?'danger':''}" data-r="1">${esc(ok)}</button></div>`;
     d.classList.add('open');
     const inp=b.querySelector('input');if(inp)setTimeout(()=>{inp.focus();inp.select()},50);
     const done=v=>{d.classList.remove('open');d.onclick=null;b.onkeydown=null;res(v)};
     const collect=()=>fields.length?[...b.querySelectorAll('input')].map(i=>i.value.trim()):true;
-    d.onclick=e=>{if(e.target===d)return done(null);const r=e.target.closest('[data-r]');if(r)done(r.dataset.r==='1'?collect():null)};
+    d.onclick=e=>{if(e.target===d)return done(null);const r=e.target.closest('[data-r]');if(r)done(r.dataset.r==='1'?collect():r.dataset.r==='2'?'extra':null)};
     b.onkeydown=e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT')done(collect());if(e.key==='Escape')done(null)};
   });
 }
@@ -428,7 +433,7 @@ async function useDrive(base,name){
 }
 
 /* ---------------- möppur ---------------- */
-let trail=[],view='folder',folderTab='skjol',filt={st:'open',q:'',cat:''},filtCat='',items=[],curSheet=null;
+let trail=[],view='folder',folderTab='skjol',filt={st:'open',q:'',cat:'',co:''},filtCat='',items=[],curSheet=null;
 const isDrawing=i=>i.file&&(/^image\//.test(i.file.mimeType||'')||/pdf/.test(i.file.mimeType||'')||/\.(pdf|png|jpe?g|webp|gif|heic)$/i.test(i.name));
 const hidden=i=>i.name===DATA_DIR||i.name===PHOTO_DIR||i.name.startsWith('.');
 const curFolder=()=>trail[trail.length-1];
@@ -473,6 +478,55 @@ function renderFolder(reset){
   }
   v.innerHTML=h+'</div>';v.scrollTop=sc;
   if(focusQ){const q=$('#q');if(q){q.focus();q.setSelectionRange(sel,sel)}}
+}
+const PEOPLE_ID='notendur',NOCO='Án fyrirtækis';
+const TITLES=['Byggingarstjóri','Verkstjóri','Smiður','Rafvirki','Pípulagningamaður','Múrari','Málari','Dúklagningamaður','Blikksmiður','Arkitekt','Verkfræðingur','Eftirlitsmaður','Verkkaupi'];
+const peopleRec=()=>SC.get(PEOPLE_ID);
+const people=()=>{const r=peopleRec();return r?Object.entries(r.d.people||{}).filter(([,p])=>!p.deleted):[]};
+const personOf=id=>{if(!id)return null;const r=peopleRec();const p=r&&r.d.people&&r.d.people[id];return p&&!p.deleted?p:null};
+const assigneeLabel=p=>{const per=personOf(p.assigneeId);return per?per.name+(per.company?' · '+per.company:''):(p.assignee||'')};
+const assigneeCo=p=>{const per=personOf(p.assigneeId);return per?(per.company||NOCO):''};
+const initials=n=>String(n||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+const sortCos=a=>a.sort((x,y)=>x===NOCO?1:y===NOCO?-1:x.localeCompare(y,'is'));
+async function ensurePeople(){if(!peopleRec())await loadSc(PEOPLE_ID);const r=peopleRec();r.d.people=r.d.people||{};return r}
+function groupPeople(list){const g={};list.forEach(x=>{const c=x[1].company||NOCO;(g[c]=g[c]||[]).push(x)});for(const c in g)g[c].sort((a,b)=>a[1].name.localeCompare(b[1].name,'is'));return g}
+async function openPeople(){
+  closePanel();view='people';addMode=false;moveMode=null;curSheet=null;
+  setHeader('Notendur og fyrirtæki',cfg.driveName,true);$('#view').classList.remove('full');renderPeople();
+  try{await loadSc(PEOPLE_ID,true);if(!allScAt)await loadAllSc()}catch(e){if(e instanceof AuthErr)return needLogin()}
+  if(view==='people')renderPeople();
+}
+function renderPeople(){
+  const v=$('#view'),sc=v.scrollTop,list=people(),g=groupPeople(list);
+  const open={};for(const[fid,rec]of SC)if(fid!==PEOPLE_ID)for(const[,p]of livePins(rec.d))if(p.assigneeId&&p.status!=='lokid')open[p.assigneeId]=(open[p.assigneeId]||0)+1;
+  let h=`<div class="wrap"><h2>Notendur og fyrirtæki</h2><p style="color:var(--mut);font-size:14px;margin:-6px 0 6px">Aðilar sem hægt er að skrá ábyrga fyrir punktum, flokkaðir eftir fyrirtæki. Listinn vistast í OneDrive og er sameiginlegur öllum.</p>`;
+  if(!list.length)h+=`<div class="empty"><b>Engir notendur enn</b>Bættu við t.d. verkstjóranum, rafvirkjanum eða pípulagningamanninum.</div>`;
+  for(const co of sortCos(Object.keys(g))){const col=co===NOCO?'#9aa0a8':catColor(co);
+    h+=`<div class="cathd"><span class="cdot" style="background:${col}"></span>${esc(co)}<small>${g[co].length}</small></div><div class="card rows">${g[co].map(([id,p])=>`<div class="row" data-person="${esc(id)}"><div class="avatar" style="background:${col}">${esc(initials(p.name))}</div><div class="grow"><b>${esc(p.name)}</b><small>${esc([p.title,p.phone,p.email].filter(Boolean).join(' · ')||'—')}</small></div>${open[id]?`<span class="badge" title="Opnir punktar">${open[id]}</span>`:''}<span class="chev">›</span></div>`).join('')}</div>`}
+  h+=`<button class="btn fab" data-act="newperson">＋ Nýr notandi</button></div>`;
+  v.innerHTML=h;v.scrollTop=sc;
+}
+async function editPerson(id){
+  const r=await ensurePeople();const p=id?r.d.people[id]:{};
+  const cos=sortCos([...new Set(people().map(([,x])=>x.company).filter(Boolean))]);
+  const titles=[...new Set([...TITLES,...people().map(([,x])=>x.title).filter(Boolean)])];
+  const res=await ask({title:id?'Breyta notanda':'Nýr notandi',fields:[{label:'Nafn',value:p.name,ph:'t.d. Jón Jónsson'},{label:'Fyrirtæki',value:p.company,ph:'t.d. Rafverk ehf',list:cos},{label:'Starfsheiti',value:p.title,ph:'t.d. Rafvirki',list:titles},{label:'Netfang',value:p.email,type:'email'},{label:'Sími',value:p.phone,type:'tel'}],ok:'Vista',extra:id?'Eyða':''});
+  if(!res)return null;
+  if(res==='extra'){const ok=await ask({title:`Eyða ${p.name}?`,text:'Punktar sem viðkomandi ber ábyrgð á verða án ábyrgðaraðila.',ok:'Eyða',danger:true});if(!ok)return null;r.d.people[id]={...p,deleted:true,updatedAt:Date.now()};touch(PEOPLE_ID);render();return null}
+  const[name,company,title,email,phone]=res;if(!name){toast('Nafn vantar');return null}
+  const nid=id||uid();r.d.people[nid]={...p,name,company,title,email,phone,updatedAt:Date.now(),createdAt:p.createdAt||Date.now()};touch(PEOPLE_ID);render();toast('Notandi vistaður');return nid;
+}
+function pickPerson(currentId){
+  return new Promise(res=>{
+    const d=$('#dlg'),b=$('#dbox');
+    const draw=q=>{const L=people().filter(([,p])=>!q||[p.name,p.company,p.title].join(' ').toLowerCase().includes(q));const g=groupPeople(L);
+      return sortCos(Object.keys(g)).map(c=>`<div class="cathd" style="margin:12px 0 6px"><span class="cdot" style="background:${c===NOCO?'#9aa0a8':catColor(c)}"></span>${esc(c)}</div><div class="card rows">${g[c].map(([id,p])=>`<div class="row" data-pid="${esc(id)}" style="padding:10px 12px${id===currentId?';background:#fdeee4':''}"><div class="grow"><b>${esc(p.name)}</b><small>${esc(p.title||'')}</small></div>${id===currentId?'✓':''}</div>`).join('')}</div>`).join('')||`<p style="color:var(--mut);margin:10px 0">${people().length?'Enginn fannst.':'Engir notendur skráðir enn – smelltu á „＋ Nýr“.'}</p>`};
+    b.innerHTML=`<h4>Hver ber ábyrgð?</h4><input class="search" id="ppq" placeholder="Leita að nafni, fyrirtæki eða starfi…"><div id="pplist" style="max-height:48vh;overflow:auto;margin-top:4px">${draw('')}</div><div class="dbtns"><button class="btn ghost" data-pp="x">Hætta við</button><button class="btn ghost" data-pp="none">Enginn</button><button class="btn" data-pp="new">＋ Nýr</button></div>`;
+    d.classList.add('open');
+    const done=v=>{d.classList.remove('open');d.onclick=null;res(v)};
+    $('#ppq').oninput=e=>{$('#pplist').innerHTML=draw(e.target.value.toLowerCase().trim())};
+    d.onclick=e=>{if(e.target===d)return done(null);let el;if(el=e.target.closest('[data-pid]'))return done({id:el.dataset.pid});if(el=e.target.closest('[data-pp]')){const k=el.dataset.pp;done(k==='x'?null:k==='none'?{id:''}:{isNew:true})}};
+  });
 }
 const catOf=id=>{const r=SC.get(id);return(r&&r.d.category)||''};
 const catOrder=c=>{const i=CATS.findIndex(x=>x[0]===c);return c===''?999:i<0?100:i};
@@ -522,14 +576,16 @@ async function editCat(it){const c=await pickCategory('Flokkur: '+it.name,catOf(
 function pinListHTML(pins,showSheet){
   const q=filt.q.toLowerCase(),today=new Date().toISOString().slice(0,10);
   const pcats=showSheet?sortCats([...new Set(pins.map(x=>x.cat||''))]):[];if(filt.cat&&!pcats.includes(filt.cat==='__none'?'':filt.cat))filt.cat='';
-  const list=pins.filter(({p,cat})=>(!filt.cat||(cat||'')===(filt.cat==='__none'?'':filt.cat))&&(filt.st==='all'||(filt.st==='open'?p.status!=='lokid':p.status===filt.st))&&(!q||[p.title,p.desc,p.assignee].join(' ').toLowerCase().includes(q)))
+  const pcos=sortCos([...new Set(pins.map(x=>assigneeCo(x.p)).filter(Boolean))]);if(filt.co&&!(filt.co==='__none'||pcos.includes(filt.co)))filt.co='';
+  const list=pins.filter(({p,cat})=>(!filt.cat||(cat||'')===(filt.cat==='__none'?'':filt.cat))&&(!filt.co||(filt.co==='__none'?!assigneeCo(p):assigneeCo(p)===filt.co))&&(filt.st==='all'||(filt.st==='open'?p.status!=='lokid':p.status===filt.st))&&(!q||[p.title,p.desc,assigneeLabel(p)].join(' ').toLowerCase().includes(q)))
     .sort((a,b)=>(a.p.status==='lokid')-(b.p.status==='lokid')||(a.p.due||'9').localeCompare(b.p.due||'9')||(b.p.createdAt||0)-(a.p.createdAt||0));
   const chip=(k,l)=>`<button class="chip ${filt.st===k?'on':''}" data-filt="${k}">${l}</button>`;
   return`<div class="chips">${chip('open','Ólokið')}${chip('opid','Opið')}${chip('vinnsla','Í vinnslu')}${chip('lokid','Lokið')}${chip('all','Allt')}</div>
   ${pcats.some(c=>c)?`<div class="chips" style="margin-top:-4px">${[['','Allir flokkar'],...pcats.map(c=>[c||'__none',c||'Óflokkað'])].map(([k,l])=>`<button class="chip ${filt.cat===k?'on':''}" data-pcat="${esc(k)}">${k?`<span class="cdot" style="background:${catColor(k==='__none'?'':k)}"></span>`:''}${esc(l)}</button>`).join('')}</div>`:''}
+  ${pcos.length?`<div class="chips" style="margin-top:-4px">${[['','Öll fyrirtæki'],...pcos.map(c=>[c,c]),['__none','Óúthlutað']].map(([k,l])=>`<button class="chip ${filt.co===k?'on':''}" data-pco="${esc(k)}">${k&&k!=='__none'?`<span class="cdot" style="background:${k===NOCO?'#9aa0a8':catColor(k)}"></span>`:''}${k?'👷 ':''}${esc(l)}</button>`).join('')}</div>`:''}
   <input class="search" id="q" placeholder="Leita í punktum…" value="${esc(filt.q)}">
   <div class="card rows" style="margin-top:12px">${list.length?list.map(({fid,pid,p,name})=>{const st=ST[p.status]||ST.opid,late=p.due&&p.status!=='lokid'&&p.due<today;
-    return`<div class="row" data-pinrow="${esc(pid)}" data-fid="${esc(fid)}"><span class="pnum" style="background:${st.c}">${p.n}</span><div class="grow"><b>${esc(p.title||'Ónefndur punktur')}</b><small>${showSheet?esc(name)+(p.page>1?` bls. ${p.page}`:'')+' · ':''}${st.l}${p.assignee?' · '+esc(p.assignee):''}${p.due?` · <span style="${late?'color:#d23a3f;font-weight:600':''}">${fmtD(p.due)}</span>`:''}</small></div><span class="chev">›</span></div>`}).join(''):'<div class="empty">Engir punktar hér.</div>'}</div>`;
+    return`<div class="row" data-pinrow="${esc(pid)}" data-fid="${esc(fid)}"><span class="pnum" style="background:${st.c}">${p.n}</span><div class="grow"><b>${esc(p.title||'Ónefndur punktur')}</b><small>${showSheet?esc(name)+(p.page>1?` bls. ${p.page}`:'')+' · ':''}${st.l}${assigneeLabel(p)?' · '+esc(assigneeLabel(p)):''}${p.due?` · <span style="${late?'color:#d23a3f;font-weight:600':''}">${fmtD(p.due)}</span>`:''}</small></div><span class="chev">›</span></div>`}).join(''):'<div class="empty">Engir punktar hér.</div>'}</div>`;
 }
 $('#view').addEventListener('click',safe(async e=>{
   const t=e.target;let el;
@@ -538,14 +594,16 @@ $('#view').addEventListener('click',safe(async e=>{
   if(el=t.closest('[data-tcat]')){e.stopPropagation();return editCat(items.find(i=>i.id===el.dataset.tcat))}
   if(el=t.closest('[data-fcat]')){filtCat=el.dataset.fcat;return renderFolder(false)}
   if(el=t.closest('[data-pcat]')){filt.cat=el.dataset.pcat;return renderFolder(false)}
+  if(el=t.closest('[data-pco]')){filt.co=el.dataset.pco;return renderFolder(false)}
+  if(el=t.closest('[data-person]'))return editPerson(el.dataset.person);
   if(el=t.closest('[data-sheet]'))return openSheet(items.find(i=>i.id===el.dataset.sheet));
   if(el=t.closest('[data-tab]')){folderTab=el.dataset.tab;if(folderTab==='punktar')allScAt=0;return renderFolder(true)}
   if(el=t.closest('[data-filt]')){filt.st=el.dataset.filt;return renderFolder(false)}
   if(el=t.closest('[data-pinrow]')){const it=await gj(`${D()}/items/${el.dataset.fid}`);const p=SC.get(el.dataset.fid).d.pins[el.dataset.pinrow];return openSheet(it,p&&p.page,el.dataset.pinrow)}
-  if(el=t.closest('[data-act]')){const a=el.dataset.act;if(a==='newfolder')newFolder();if(a==='upload')pickSheets()}
+  if(el=t.closest('[data-act]')){const a=el.dataset.act;if(a==='newfolder')newFolder();if(a==='upload')pickSheets();if(a==='newperson')editPerson(null)}
 }));
 $('#view').addEventListener('input',e=>{if(e.target.id==='q'){filt.q=e.target.value;renderFolder(false)}});
-$('#back').onclick=()=>{if(view==='sheet'){flushAll();return openFolder(trail.length-1)}if(trail.length>1)openFolder(trail.length-2)};
+$('#back').onclick=()=>{if(view==='people')return openFolder(trail.length-1);if(view==='sheet'){flushAll();return openFolder(trail.length-1)}if(trail.length>1)openFolder(trail.length-2)};
 $('#menu').onclick=()=>{
   const L=[];const f=curFolder();
   if(view==='folder'){
@@ -554,6 +612,7 @@ $('#menu').onclick=()=>{
     L.push({label:'↗ Opna möppuna í OneDrive',fn:()=>window.open((f.item&&f.item.webUrl)||'#','_blank')});
   }
   if(view==='sheet'&&curSheet)L.push({label:'🏷 Flokkur: '+(catOf(curSheet.id)||'enginn'),fn:()=>editCat(curSheet)},{label:'↗ Opna skrána í OneDrive',fn:()=>window.open(curSheet.webUrl,'_blank')},{label:'🗑 Eyða teikningu',danger:true,fn:deleteSheet});
+  if(view!=='people')L.push({label:'👥 Notendur og fyrirtæki',fn:openPeople});
   L.push({label:'☁️ Skipta um geymslu ('+cfg.driveName+')',fn:pickDrive},{label:'⎋ Skrá út ('+(me.name||me.email)+')',fn:logout});
   actions(L);
 };
@@ -709,7 +768,7 @@ function updateVbar(){
   const h=$('#hint');if(h){h.hidden=!(addMode||moveMode);h.textContent=moveMode?'Pikkaðu þar sem punkturinn á að vera':'Pikkaðu á teikninguna til að setja punkt'}
   if(vw)vw.classList.toggle('adding',!!(addMode||moveMode));
 }
-function render(){if(view==='sheet'){renderPins();updateVbar();if($('#panel').classList.contains('open'))renderPanel(false)}else if(view==='folder')renderFolder(false)}
+function render(){if(view==='people')return renderPeople();if(view==='sheet'){renderPins();updateVbar();if($('#panel').classList.contains('open'))renderPanel(false)}else if(view==='folder')renderFolder(false)}
 function showSheetList(){
   openPinId=null;renderPins();$('#panel').dataset.mode='list';
   $('#pbody').innerHTML=`<div class="ph"><b style="flex:1;font-size:17px">Punktar${pages>1?` á bls. ${page}`:''}</b><button class="x" data-pa="close">✕</button></div><div id="slist">${pinListHTML(sheetPins().map(([pid,p])=>({fid:curSheet.id,pid,p})),false)}</div>`;
@@ -733,7 +792,7 @@ function renderPanel(full){
     pb.innerHTML=`<div class="ph"><span class="pnum" id="p-num" style="background:${st.c}">${p.n}</span><input id="p-title" placeholder="Heiti punkts, t.d. Vantar þéttingu" value="${esc(p.title)}"><button class="x" data-pa="close">✕</button></div>
     <div class="seg" id="p-seg">${seg}</div>
     <label class="fl">Lýsing<textarea id="p-desc" placeholder="Hvað þarf að gera?">${esc(p.desc)}</textarea></label>
-    <div class="row2"><label class="fl">Ábyrgð<input id="p-assignee" placeholder="Nafn / fyrirtæki" value="${esc(p.assignee)}"></label><label class="fl">Frestur<input id="p-due" type="date" value="${esc(p.due)}"></label></div>
+    <div class="row2"><label class="fl">Ábyrgð<button type="button" class="pickbtn ${assigneeLabel(p)?'':'empty'}" id="p-assignee" data-pa="assignee">${esc(assigneeLabel(p)||'Velja aðila…')}</button></label><label class="fl">Frestur<input id="p-due" type="date" value="${esc(p.due)}"></label></div>
     <div class="fl">Myndir</div><div class="photos" id="p-photos">${photosHTML}</div>
     <div class="fl" style="margin-top:16px">Athugasemdir</div><div id="p-notes">${notesHTML}</div>
     <div class="noteform"><textarea id="p-note" placeholder="Skrifa athugasemd…"></textarea><button class="btn" data-pa="send">Senda</button></div>
@@ -743,7 +802,8 @@ function renderPanel(full){
   }else{
     const n=$('#p-num');if(!n)return renderPanel(true);n.style.background=st.c;n.textContent=p.n;
     document.querySelectorAll('#p-seg button').forEach(b=>{const on=b.dataset.v===p.status;b.classList.toggle('on',on);b.style.background=on?ST[b.dataset.v].c:''});
-    for(const f of['title','desc','assignee','due']){const el=$('#p-'+f);if(el&&document.activeElement!==el&&!(f in pending))el.value=p[f]||''}
+    {const ab=$('#p-assignee');if(ab){const l=assigneeLabel(p);ab.textContent=l||'Velja aðila…';ab.classList.toggle('empty',!l)}}
+    for(const f of['title','desc','due']){const el=$('#p-'+f);if(el&&document.activeElement!==el&&!(f in pending))el.value=p[f]||''}
     const ph=$('#p-photos');if(ph.dataset.k!==photosHTML){ph.innerHTML=photosHTML;ph.dataset.k=photosHTML}
     const nt=$('#p-notes');if(nt.dataset.k!==notesHTML){nt.innerHTML=notesHTML;nt.dataset.k=notesHTML}
   }
@@ -752,7 +812,7 @@ function renderPanel(full){
 const pending={};let fieldT=null;
 function queueField(f,v){pending[f]=v;clearTimeout(fieldT);fieldT=setTimeout(flushFields,600)}
 function flushFields(){clearTimeout(fieldT);const ch={...pending};for(const k in pending)delete pending[k];if(openPinId&&curSheet&&Object.keys(ch).length)editPin(openPinId,ch)}
-$('#pbody').addEventListener('input',e=>{const m=e.target.id&&e.target.id.match(/^p-(title|desc|assignee|due)$/);if(m)queueField(m[1],e.target.value);if(e.target.id==='q'){filt.q=e.target.value;const sl=$('#slist');if(sl){sl.innerHTML=pinListHTML(sheetPins().map(([pid,p])=>({fid:curSheet.id,pid,p})),false);const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}}});
+$('#pbody').addEventListener('input',e=>{const m=e.target.id&&e.target.id.match(/^p-(title|desc|due)$/);if(m)queueField(m[1],e.target.value);if(e.target.id==='q'){filt.q=e.target.value;const sl=$('#slist');if(sl){sl.innerHTML=pinListHTML(sheetPins().map(([pid,p])=>({fid:curSheet.id,pid,p})),false);const q=$('#q');q.focus();q.setSelectionRange(q.value.length,q.value.length)}}});
 $('#pbody').addEventListener('focusout',e=>{if(/^p-/.test(e.target.id||''))flushFields()});
 $('#pbody').addEventListener('click',safe(async e=>{
   const t=e.target;let el;
@@ -763,6 +823,9 @@ $('#pbody').addEventListener('click',safe(async e=>{
   const a=el.dataset.pa,id=openPinId;
   if(a==='close')return closePanel();
   if(a==='st'){flushFields();return editPin(id,{status:el.dataset.v})}
+  if(a==='assignee'){flushFields();await ensurePeople();const cur=SC.get(curSheet.id).d.pins[id];const r=await pickPerson(cur&&cur.assigneeId);if(!r)return;
+    if(r.isNew){const nid=await editPerson(null);if(nid)editPin(id,{assigneeId:nid,assignee:''});return}
+    return editPin(id,{assigneeId:r.id,assignee:''})}
   if(a==='photo'){flushFields();$('#photoIn').value='';return $('#photoIn').click()}
   if(a==='send'){const ta=$('#p-note'),txt=ta.value.trim();if(!txt)return;ta.value='';const rec=SC.get(curSheet.id);const now=Date.now();rec.d.notes[uid()]={pinId:id,text:txt,by:me.name||me.email,createdAt:now,updatedAt:now};touch(curSheet.id);render();return}
   if(a==='move'){flushFields();moveMode=id;addMode=false;$('#panel').classList.remove('open');updateVbar();return}
@@ -780,7 +843,7 @@ addEventListener('beforeunload',e=>{if([...SC.values()].some(r=>r.dirty||r.savin
   try{
     const u=await gj('/me?$select=displayName,mail,userPrincipalName');me={name:u.displayName||'',email:u.mail||u.userPrincipalName||''};
     try{await initDrive()}catch(e){if(e instanceof AuthErr)throw e;if(cfg.driveBase!=='/me/drive'){toast('Gat ekki opnað „'+cfg.driveName+'“ – nota mitt OneDrive',5000);cfg={driveBase:'/me/drive',driveName:'Mitt OneDrive'};ls.set('vp_cfg',cfg);await initDrive()}else throw e}
-    setSync();openFolder(0);
+    setSync();openFolder(0);loadSc(PEOPLE_ID).then(()=>render()).catch(()=>{});
   }catch(e){if(e instanceof AuthErr)return showLogin();console.error(e);$('#view').innerHTML=`<div class="center"><h1>Villa</h1><p>${esc(e.message)}</p><button class="btn" onclick="location.reload()">Reyna aftur</button></div>`}
 })();
 </script>
