@@ -190,7 +190,9 @@ a.row{color:inherit;text-decoration:none}
 const CONFIG = {
   clientId: '950df0c5-853d-43ef-84db-8b60f1f5bcde',   // Application (client) ID
   tenant:   '00398642-4822-4a7b-a763-f7239ec731b5',          // Directory (tenant) ID, eða 'organizations'
-  rootFolder: 'Verkpunktar'           // Rótarmappa verkefna í OneDrive / SharePoint
+  rootFolder: 'Verkpunktar',          // Rótarmappa verkefna í OneDrive / SharePoint
+  // Sameiginleg geymsla sem allir nota sjálfkrafa (SharePoint-safn). Settu null til að nota OneDrive hvers og eins.
+  defaultDrive: {driveBase:'/drives/b!HXequO2BREmnTnlGY5SxM7Z1hvokWu9Hp0MXlbQkWQe21MmbBL6nQYMIJWVf_NEq', driveName:'Armaþing ehf › Documents'}
 };
 /* ===================================================================== */
 "use strict";
@@ -258,7 +260,14 @@ async function gj(path,opt){
   if(!r.ok){let m='';try{m=(await r.json()).error.message}catch(e){}const e=new Error(m||('Villa '+r.status));e.status=r.status;throw e}
   return r.status===204?null:r.json();
 }
-let cfg=ls.get('vp_cfg')||{driveBase:'/me/drive',driveName:'Mitt OneDrive'};
+let cfg=ls.get('vp_cfg')||CONFIG.defaultDrive||{driveBase:'/me/drive',driveName:'Mitt OneDrive'};
+const framed=(()=>{try{return window.top!==window}catch(e){return true}})();
+addEventListener('message',e=>{if(e.origin===location.origin&&e.data&&e.data.vpTok&&e.data.vpTok.access){tok=e.data.vpTok;ls.set('vp_tok',tok);location.reload()}});
+function loginPopup(){
+  const w=window.open(REDIRECT+'?popup=1','vp_login','width=500,height=680');
+  if(!w){toast('Vafrinn lokaði á innskráningargluggann – opnaðu appið í nýjum flipa.',6000);return}
+  const iv=setInterval(()=>{let t=null;try{t=w.vpTok}catch(e){}if(t&&t.access){clearInterval(iv);tok=t;ls.set('vp_tok',tok);try{w.close()}catch(e){}location.reload()}else if(w.closed)clearInterval(iv)},500);
+}
 const D=()=>cfg.driveBase;
 const P=name=>encodeURIComponent(name);
 async function children(id){let url=`${D()}/items/${id}/children?$top=500&$expand=thumbnails`,out=[];while(url){const j=await gj(url);out.push(...j.value);url=j['@odata.nextLink']}return out}
@@ -393,8 +402,8 @@ function showLogin(msg){
   rootItem=null;setHeader('');setSync();
   $('#view').innerHTML=`<div class="center"><span class="logo"><i></i></span><h1>Verkpunktar</h1><p>Punktar og athugasemdir á teikningar – vistað í OneDrive.</p>
   ${msg?`<p style="color:#d23a3f">${esc(msg)}</p>`:''}
-  <button class="ms" id="loginBtn"><b><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></b>Skrá inn með Microsoft</button></div>`;
-  $('#loginBtn').onclick=()=>login();
+  <button class="ms" id="loginBtn"><b><i style="background:#f25022"></i><i style="background:#7fba00"></i><i style="background:#00a4ef"></i><i style="background:#ffb900"></i></b>Skrá inn með Microsoft</button>${framed?`<p style="margin-top:18px;font-size:13px"><a href="${esc(REDIRECT)}" target="_blank" rel="noopener">Opna Verkpunktar í nýjum flipa ↗</a></p>`:''}</div>`;
+  $('#loginBtn').onclick=()=>framed?loginPopup():login();
 }
 function needLogin(){closePanel();showLogin('Innskráning rann út. Skráðu þig inn aftur – óvistaðar breytingar vistast þá.')}
 
@@ -409,7 +418,7 @@ async function initDrive(){
 function pickDrive(){
   const d=$('#dlg'),b=$('#dbox');
   b.innerHTML=`<h4>Hvar á að vista?</h4><p>Veldu þitt eigið OneDrive eða sameiginlegt SharePoint-safn (t.d. fyrir verkefnahóp).</p>
-  <div class="card rows pick"><div class="row" data-dr="me"><div class="ico">☁️</div><div class="grow"><b>Mitt OneDrive</b><small>${esc(me.email)}</small></div></div></div>
+  <div class="card rows pick">${CONFIG.defaultDrive?`<div class="row" data-dr="def"><div class="ico">🏢</div><div class="grow"><b>${esc(CONFIG.defaultDrive.driveName)}</b><small>Sameiginleg geymsla fyrirtækisins</small></div></div>`:''}<div class="row" data-dr="me"><div class="ico">☁️</div><div class="grow"><b>Mitt OneDrive</b><small>${esc(me.email)}</small></div></div></div>
   <label class="fl" style="margin-top:14px">Leita að SharePoint-svæði<input id="siteQ" placeholder="t.d. Framkvæmdir"></label>
   <div id="siteRes" class="card rows pick"></div><div class="dbtns"><button class="btn ghost" data-dr="x">Hætta við</button></div>`;
   d.classList.add('open');
@@ -419,7 +428,7 @@ function pickDrive(){
   d.onclick=safe(async e=>{
     if(e.target===d){d.classList.remove('open');return}
     let el;
-    if(el=e.target.closest('[data-dr]')){const v=el.dataset.dr;if(v==='x')return d.classList.remove('open');if(v==='me'){await useDrive('/me/drive','Mitt OneDrive');return}}
+    if(el=e.target.closest('[data-dr]')){const v=el.dataset.dr;if(v==='x')return d.classList.remove('open');if(v==='me'){await useDrive('/me/drive','Mitt OneDrive');return}if(v==='def'){await useDrive(CONFIG.defaultDrive.driveBase,CONFIG.defaultDrive.driveName);return}}
     if(el=e.target.closest('[data-site]')){const s=sites[+el.dataset.site];const j=await gj(`/sites/${s.id}/drives`);$('#siteRes').innerHTML=j.value.map(dr=>`<div class="row" data-drive="${esc(dr.id)}" data-nm="${esc((s.displayName||s.name)+' › '+dr.name)}"><div class="ico">📚</div><div class="grow"><b>${esc(dr.name)}</b><small>${esc(s.displayName||s.name)}</small></div></div>`).join('')}
     if(el=e.target.closest('[data-drive]'))await useDrive('/drives/'+el.dataset.drive,el.dataset.nm);
   });
@@ -838,7 +847,10 @@ addEventListener('beforeunload',e=>{if([...SC.values()].some(r=>r.dirty||r.savin
 /* ---------------- ræsing ---------------- */
 (async()=>{
   if(!/^[0-9a-f-]{36}$/i.test(CONFIG.clientId))return showSetup();
-  try{await handleRedirect()}catch(e){return showLogin(e.message)}
+  if(new URLSearchParams(location.search).get('popup')==='1'){sessionStorage.setItem('vp_popup','1');return login()}
+  try{await handleRedirect()}catch(e){sessionStorage.removeItem('vp_popup');return showLogin(e.message)}
+  if(sessionStorage.getItem('vp_popup')){sessionStorage.removeItem('vp_popup');window.vpTok=tok;try{window.opener&&window.opener.postMessage({vpTok:tok},location.origin)}catch(e){}
+    setHeader('');$('#view').innerHTML='<div class="center"><span class="logo"><i></i></span><h1>Innskráning tókst</h1><p>Þú mátt loka þessum glugga.</p></div>';setTimeout(()=>{try{window.close()}catch(e){}},1500);return}
   if(!tok)return showLogin();
   try{
     const u=await gj('/me?$select=displayName,mail,userPrincipalName');me={name:u.displayName||'',email:u.mail||u.userPrincipalName||''};
