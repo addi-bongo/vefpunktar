@@ -1,0 +1,6 @@
+{
+  "routes": [
+    { "route": "/g/*", "rewrite": "/g.html" }
+  ],
+  "platform": { "apiRuntime": "node:18" }
+}
