@@ -1,0 +1,7 @@
+{
+  "name": "verkpunktar-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deiling teikninga til viðskiptavina (gluggaval)",
+  "engines": { "node": ">=18" }
+}
