@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#141414">
+<meta name="robots" content="noindex">
+<title>Merkja glugga – Armaþing</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+:root{--y:#fbba2f;--yd:#d99a10;--ink:#16181d;--mut:#6b7280;--line:#e5e7eb;--bg:#f5f5f4;--err:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:#141414;color:#fff}
+.top{max-width:1100px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px}
+.top img{width:40px;height:40px;border-radius:9px}
+.top b{display:block;font-size:17px;letter-spacing:.04em}
+.top span{display:block;font-size:12px;color:#bbb;letter-spacing:.12em;text-transform:uppercase}
+main{max-width:1100px;margin:0 auto;padding:18px 16px}
+h1{font-size:clamp(22px,5vw,32px);line-height:1.15;margin:4px 0 6px}
+.lead{color:#444;margin:0 0 14px;max-width:680px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;margin:0 0 16px;overflow:hidden}
+.card h2{font-size:16px;margin:0;padding:12px 16px;border-bottom:1px solid var(--line)}
+.vw{position:relative;height:60vh;overflow:hidden;background:#fafafa;touch-action:none;cursor:grab}
+.vw.drag{cursor:grabbing}
+.in{position:absolute;left:0;top:0;transform-origin:0 0;--inv:1}
+.in img{display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
+.mk{position:absolute;transform:translate(-50%,-50%) scale(var(--inv));width:40px;height:40px;border-radius:50%;border:3px solid var(--yd);background:rgba(255,255,255,.9);
+  display:grid;place-items:center;font:700 12px/1 system-ui,sans-serif;color:#141414;cursor:pointer;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.mk span{max-width:36px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mk[aria-pressed=true]{background:var(--y);border-color:#9a3412;box-shadow:0 0 0 4px rgba(251,186,47,.45),0 1px 4px rgba(0,0,0,.35)}
+.mk[aria-pressed=true]::after{content:"✓";position:absolute;right:-8px;top:-8px;width:20px;height:20px;border-radius:50%;background:#15803d;color:#fff;font-size:12px;display:grid;place-items:center}
+.mk:focus-visible{outline:3px solid #1d4ed8;outline-offset:3px}
+.zb{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:6px}
+.zb button{width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:20px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.hint{font-size:13px;color:var(--mut);padding:8px 16px;border-top:1px solid var(--line)}
+.sel{padding:14px 16px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:#fff7e0;border:1px solid #f5d27a;border-radius:999px;padding:5px 12px;font-weight:600;font-size:14px}
+.tools{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.tools button{background:#f3f4f6;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+form{padding:16px;display:grid;gap:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label>span{display:block;font-size:14px;font-weight:600;margin-bottom:5px}
+input[type=text],input[type=email],textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff}
+textarea{min-height:90px;resize:vertical}
+[aria-invalid=true]{border-color:var(--err)!important;outline-color:var(--err)}
+.error{color:var(--err);font-size:13px;margin:4px 0 0}
+.error:empty{display:none}
+.btn{background:var(--y);color:#141414;border:0;border-radius:12px;padding:15px 20px;font:inherit;font-weight:700;font-size:17px;cursor:pointer}
+.btn:disabled{opacity:.6}
+.done{padding:28px 18px;text-align:center}
+.done h2{border:0;font-size:22px}
+.muted{color:var(--mut);font-size:14px}
+footer{max-width:1100px;margin:0 auto;padding:4px 20px 30px;color:var(--mut);font-size:13px}
+@media (max-width:560px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="top"><img src="/icon-192.png" alt=""><div><b>ARMAÞING</b><span>Gluggaskipti</span></div></div></header>
+<main id="app"><p class="muted">Hleð teikningu…</p></main>
+<footer>Armaþing ehf · armathing.is</footer>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const token = (location.pathname.match(/^\/g\/([A-Za-z0-9]{20,40})/) || [])[1] || (new URLSearchParams(location.search).get('t') || '').replace(/[^A-Za-z0-9]/g,'');
+let S, sel = new Set(), vz = {s:1,x:0,y:0}, fitS = 1;
+
+async function load(){
+  if(!token){ $('#app').innerHTML = '<p>Tengillinn er ekki réttur. Notaðu tengilinn sem þú fékkst sendan.</p>'; return; }
+  let r;
+  try{ r = await fetch('/api/g/' + token, {cache:'no-store'}); }catch(e){ return fail('Ekki náðist samband. Athugaðu nettenginguna og reyndu aftur.'); }
+  if(r.status === 410) return fail('Þessum tengli hefur verið lokað. Hafðu samband við Armaþing ef þú þarft að breyta vali.');
+  if(!r.ok) return fail('Tengillinn fannst ekki. Athugaðu að hann hafi afritast rétt.');
+  S = await r.json();
+  S.pins.forEach(p => { if(p.merkt) sel.add(p.id); });
+  document.title = (S.title || 'Merkja glugga') + ' – Armaþing';
+  render();
+}
+function fail(m){ $('#app').innerHTML = `<section class="card done" role="alert"><h2>${esc(m)}</h2></section>`; }
+
+function render(){
+  const pre = sel.size ? '<p class="muted" style="margin:0 0 12px">Áður merktir gluggar eru forvaldir. Þú getur breytt valinu og sent aftur.</p>' : '';
+  $('#app').innerHTML = `
+  <h1>${esc(S.title || 'Gluggaskipti')}</h1>
+  <p class="lead">${esc(S.lysing || 'Ýttu á þá glugga á teikningunni sem þarf að skipta út. Ýttu aftur til að afmerkja. Hægt er að þysja inn með tveimur fingrum eða hnöppunum.')}</p>
+  <section class="card" aria-labelledby="h-t">
+    <h2 id="h-t">Teikning <span class="muted" style="font-weight:500">· ${S.pins.length} gluggar merktir inn</span></h2>
+    <div class="vw" id="vw"><div class="in" id="in" style="width:${S.w}px;height:${S.h}px">
+      <img id="im" src="${esc(S.img)}" width="${S.w}" height="${S.h}" alt="Útlitsteikning">
+      ${S.pins.map(p => `<button type="button" class="mk" data-id="${esc(p.id)}" aria-pressed="false" style="left:${p.x*100}%;top:${p.y*100}%" aria-label="Gluggi ${esc(p.label)}"><span>${esc(p.label)}</span></button>`).join('')}
+    </div>
+    <div class="zb"><button type="button" data-z="in" aria-label="Þysja inn">＋</button><button type="button" data-z="out" aria-label="Þysja út">－</button><button type="button" data-z="fit" aria-label="Sýna alla teikninguna">⤢</button></div></div>
+    <div class="hint">Ýttu á gulu hringina til að merkja glugga sem þarf að skipta út.</div>
+  </section>
+  <section class="card" aria-labelledby="h-sel">
+    <h2 id="h-sel">Merktir gluggar</h2>
+    <div class="sel">${pre}<div id="chips" aria-live="polite"></div>
+      <div class="tools"><button type="button" id="none">Hreinsa val</button></div></div>
+  </section>
+  <section class="card" aria-labelledby="h-f">
+    <h2 id="h-f">Senda til Armaþings</h2>
+    <form id="f" novalidate>
+      <div class="two">
+        <label><span>Nafn <span aria-hidden="true">*</span></span><input type="text" name="nafn" required autocomplete="name" aria-describedby="err-nafn"><p class="error" id="err-nafn" role="alert"></p></label>
+        <label><span>Netfang <span aria-hidden="true">*</span></span><input type="email" name="netfang" required autocomplete="email" inputmode="email" aria-describedby="err-netfang"><p class="error" id="err-netfang" role="alert"></p></label>
+      </div>
+      <label><span>Fyrirtæki / húsfélag</span><input type="text" name="fyrirtaeki" autocomplete="organization"></label>
+      <label><span>Athugasemd</span><textarea name="athugasemd" placeholder="T.d. ef gluggi er sprunginn, móða milli glerja eða opnanlegt fag stíft"></textarea></label>
+      <p class="error" id="err-form" role="alert"></p>
+      <button class="btn" type="submit" id="send">Senda merkta glugga</button>
+    </form>
+  </section>`;
+  setupViewer();
+  document.querySelectorAll('.mk').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); const id = b.dataset.id; sel.has(id) ? sel.delete(id) : sel.add(id); upd(); }));
+  $('#none').onclick = () => { sel.clear(); upd(); };
+  $('#f').addEventListener('submit', send);
+  for(const n of ['nafn','netfang']) $('#f').elements[n].addEventListener('blur', () => check(n));
+  try{ const m = JSON.parse(localStorage.getItem('vp_cust') || 'null'); if(m){ for(const k of ['nafn','netfang','fyrirtaeki']) if(m[k]) $('#f').elements[k].value = m[k]; } }catch(e){}
+  upd();
+}
+function upd(){
+  document.querySelectorAll('.mk').forEach(b => b.setAttribute('aria-pressed', sel.has(b.dataset.id)));
+  const ch = S.pins.filter(p => sel.has(p.id));
+  $('#chips').innerHTML = ch.length
+    ? `<div class="chips">${ch.map(p => `<span class="chip">${esc(p.label)}</span>`).join('')}</div><p class="muted" style="margin:10px 0 0">${ch.length} ${ch.length===1?'gluggi merktur':'gluggar merktir'}</p>`
+    : '<p class="muted" style="margin:0">Engir gluggar merktir enn.</p>';
+}
+
+/* ---- þysja / draga ---- */
+function setupViewer(){
+  const vw = $('#vw'), inn = $('#in');
+  const apply = () => { inn.style.transform = `translate(${vz.x}px,${vz.y}px) scale(${vz.s})`; inn.style.setProperty('--inv', Math.min(1/vz.s, 6)); };
+  const size = () => { const w = vw.clientWidth; vw.style.height = Math.round(Math.min(innerHeight*0.72, Math.max(260, w*S.h/S.w*1.12))) + 'px'; };
+  const fit = () => { size(); const r = vw.getBoundingClientRect(); fitS = Math.min(r.width/S.w, r.height/S.h); vz = {s:fitS, x:(r.width-S.w*fitS)/2, y:(r.height-S.h*fitS)/2}; apply(); };
+  const clamp = s => Math.max(fitS*.8, Math.min(s, fitS*14));
+  const zoomAt = (px,py,ns) => { ns = clamp(ns); vz.x = px-(px-vz.x)*(ns/vz.s); vz.y = py-(py-vz.y)*(ns/vz.s); vz.s = ns; apply(); };
+  const rel = e => { const r = vw.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; };
+  const P = new Map(); let gs = null;
+  vw.addEventListener('wheel', e => { e.preventDefault(); const p = rel(e); zoomAt(p.x, p.y, vz.s*Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015))); }, {passive:false});
+  vw.addEventListener('pointerdown', e => {
+    if(e.target.closest('.zb')) return;
+    P.set(e.pointerId, rel(e));
+    if(P.size === 1){ const p = rel(e); gs = {t:'pan', sx:p.x, sy:p.y, ox:vz.x, oy:vz.y, moved:false}; }
+    else if(P.size === 2){ const [a,b] = [...P.values()]; gs = {t:'pinch', d0:Math.hypot(a.x-b.x,a.y-b.y)||1, m0:{x:(a.x+b.x)/2,y:(a.y+b.y)/2}, s0:vz.s, ox:vz.x, oy:vz.y}; }
+  });
+  vw.addEventListener('pointermove', e => {
+    if(!P.has(e.pointerId) || !gs) return; P.set(e.pointerId, rel(e));
+    if(gs.t === 'pan' && P.size === 1){ const p = rel(e), dx = p.x-gs.sx, dy = p.y-gs.sy; if(!gs.moved && Math.hypot(dx,dy) > 6){ gs.moved = true; vw.classList.add('drag'); try{vw.setPointerCapture(e.pointerId)}catch(_){} } if(gs.moved){ vz.x = gs.ox+dx; vz.y = gs.oy+dy; apply(); } }
+    else if(gs.t === 'pinch' && P.size >= 2){ const [a,b] = [...P.values()]; const d = Math.hypot(a.x-b.x,a.y-b.y), m = {x:(a.x+b.x)/2,y:(a.y+b.y)/2}; const ns = clamp(gs.s0*d/gs.d0); vz.x = m.x-(gs.m0.x-gs.ox)*(ns/gs.s0); vz.y = m.y-(gs.m0.y-gs.oy)*(ns/gs.s0); vz.s = ns; apply(); }
+  });
+  const up = e => { if(!P.has(e.pointerId)) return; P.delete(e.pointerId); vw.classList.remove('drag');
+    if(gs && gs.t === 'pan' && gs.moved) vw.addEventListener('click', ev => { ev.stopPropagation(); ev.preventDefault(); }, {capture:true, once:true});
+    if(P.size === 1){ const p = [...P.values()][0]; gs = {t:'pan', sx:p.x, sy:p.y, ox:vz.x, oy:vz.y, moved:true}; } else if(!P.size) gs = null; };
+  vw.addEventListener('pointerup', up); vw.addEventListener('pointercancel', up);
+  vw.querySelector('.zb').addEventListener('click', e => { const b = e.target.closest('[data-z]'); if(!b) return; const r = vw.getBoundingClientRect();
+    if(b.dataset.z === 'fit') fit(); else zoomAt(r.width/2, r.height/2, vz.s*(b.dataset.z === 'in' ? 1.6 : 1/1.6)); });
+  addEventListener('resize', fit);
+  fit();
+}
+
+function check(n){
+  const el = $('#f').elements[n]; const v = el.value.trim(); let msg = '';
+  if(!v) msg = n === 'nafn' ? 'Vantar nafn.' : 'Vantar netfang.';
+  else if(n === 'netfang' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) msg = 'Netfangið virðist ekki rétt.';
+  $('#err-'+n).textContent = msg;
+  if(msg) el.setAttribute('aria-invalid','true'); else el.removeAttribute('aria-invalid');
+  return !msg;
+}
+async function send(e){
+  e.preventDefault();
+  const f = $('#f'); $('#err-form').textContent = '';
+  const ok = [check('nafn'), check('netfang')];
+  if(ok.includes(false)){ f.querySelector('[aria-invalid=true]').focus(); return; }
+  if(!sel.size && !confirmEmpty()) return;
+  const body = { sel:[...sel] };
+  for(const k of ['nafn','netfang','fyrirtaeki','athugasemd']) body[k] = f.elements[k].value.trim();
+  try{ localStorage.setItem('vp_cust', JSON.stringify({nafn:body.nafn, netfang:body.netfang, fyrirtaeki:body.fyrirtaeki})); }catch(_){}
+  const b = $('#send'); b.disabled = true; b.textContent = 'Sendi…';
+  try{
+    const r = await fetch('/api/g/' + token, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const d = await r.json().catch(() => ({}));
+    if(!r.ok) throw new Error(d.error || ('Villa ' + r.status));
+    $('#app').innerHTML = `<section class="card done" role="status"><h2 tabindex="-1" id="ok">Takk fyrir!</h2>
+      <p>Valið þitt hefur verið sent til Armaþings.</p>
+      <p class="muted">${d.fjoldi ? esc(d.gluggar.join(', ')) + ` · ${d.fjoldi} ${d.fjoldi===1?'gluggi':'gluggar'}` : 'Engir gluggar merktir'}</p>
+      <p><button class="btn" type="button" id="again" style="font-size:15px;padding:10px 16px">Breyta vali</button></p></section>`;
+    $('#ok').focus(); $('#again').onclick = () => load();
+  }catch(err){
+    $('#err-form').textContent = err.message || 'Ekki tókst að senda. Reyndu aftur.';
+    b.disabled = false; b.textContent = 'Senda merkta glugga';
+  }
+}
+let warned = false;
+function confirmEmpty(){ if(warned) return true; warned = true; $('#err-form').textContent = 'Engir gluggar eru merktir. Ýttu aftur á „Senda“ ef enginn gluggi þarf skipti.'; return false; }
+load();
+</script>
+</body>
+</html>
