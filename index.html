@@ -82,6 +82,8 @@ h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)
 .pin::before{content:"";position:absolute;inset:0;background:var(--c);border:2.5px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px #0006}
 .pin span{position:relative;display:grid;place-items:center;height:30px;color:#fff;font-weight:800;font-size:13px}
 .pin.sel{z-index:2}
+.pin.cust::after{content:"⇄";position:absolute;right:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#fbba2f;color:#141414;font-size:11px;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px #fff}
+.custbox{background:#fff7e0;border:1px solid #f5d27a;border-radius:10px;padding:9px 12px;margin:0 0 12px;font-size:14px}
 .pin.sel::before{box-shadow:0 0 0 4px #ffffffcc,0 0 0 7px var(--c)}
 .vbar{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:8px;z-index:3;background:#1c2330ee;padding:6px;border-radius:16px;box-shadow:0 6px 20px #0004}
 .vbar button{background:transparent;color:#fff;border:0;border-radius:11px;padding:10px 14px;font-weight:600;white-space:nowrap}
@@ -620,20 +622,49 @@ $('#menu').onclick=()=>{
     else L.push({label:'＋ Ný mappa',fn:newFolder},{label:'⬆ Hlaða upp teikningu / mynd',fn:pickSheets},{label:'✎ Endurnefna möppu',fn:renameFolder},{label:'🗑 Eyða möppu',danger:true,fn:deleteFolder});
     L.push({label:'↗ Opna möppuna í OneDrive',fn:()=>window.open((f.item&&f.item.webUrl)||'#','_blank')});
   }
+  if(view==='sheet'&&curSheet){L.push({label:'🔗 Senda viðskiptavini tengil',fn:createShare});const sh=Object.entries((SC.get(curSheet.id)||{d:{}}).d.shares||{}).filter(([,x])=>x.active!==false);if(sh.length)L.push({label:`🔗 Tenglar á teikningu (${sh.length})`,fn:manageShares})}
   if(view==='sheet'&&curSheet)L.push({label:'🏷 Flokkur: '+(catOf(curSheet.id)||'enginn'),fn:()=>editCat(curSheet)},{label:'↗ Opna skrána í OneDrive',fn:()=>window.open(curSheet.webUrl,'_blank')},{label:'🗑 Eyða teikningu',danger:true,fn:deleteSheet});
   if(view!=='people')L.push({label:'👥 Notendur og fyrirtæki',fn:openPeople});
-  L.push({label:'🪟 Gluggalistar – senda tengil',fn:openGluggar});
   L.push({label:'☁️ Skipta um geymslu ('+cfg.driveName+')',fn:pickDrive},{label:'⎋ Skrá út ('+(me.name||me.email)+')',fn:logout});
   actions(L);
 };
-async function openGluggar(){
-  let ls=[];try{ls=await (await fetch('gluggar/listar.json',{cache:'no-cache'})).json()}catch(e){return toast('Gat ekki sótt gluggalista')}
-  actions(ls.map(x=>({label:'🔗 '+x.heiti,fn:()=>shareGlugg(x)})));
+/* ---------------- deiling til viðskiptavina (/g/<token>) ---------------- */
+const SHARE_DIR='deilingar';
+function newToken(){const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789',b=new Uint8Array(24);crypto.getRandomValues(b);return Array.from(b,x=>a[x%a.length]).join('')}
+const shareUrl=t=>location.origin+'/g/'+t;
+async function shareDir(){return ensureDir(gogn.id,SHARE_DIR)}
+async function createShare(){
+  const it=curSheet,pg=page;const pins=sheetPins();
+  if(!pins.length)return toast('Settu fyrst punkt á hvern glugga (＋ Punktur) og gefðu honum heiti, t.d. G1',5000);
+  const unnamed=pins.filter(([,p])=>!String(p.title||'').trim()).length;
+  const r=await ask({title:'Senda viðskiptavini tengil',text:`Viðskiptavinurinn sér teikninguna${pages>1?` (bls. ${pg})`:''} og ${pins.length} punkta sem hann getur merkt.${unnamed?` ${unnamed} punktar eru án heitis og birtast með númeri.`:''}`,fields:[{label:'Fyrirsögn sem viðskiptavinur sér',value:`${curFolder().name} – gluggaskipti`}],ok:'Búa til tengil'});
+  if(!r)return;
+  toast('Bý til tengil…',8000);
+  const img=await pageImage(it,pg);const im=await loadImg(img.url);
+  const k=Math.min(1,2400/Math.max(im.naturalWidth,im.naturalHeight));const c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+  const jpg=await toBlob(c,'image/jpeg',.85);
+  const t=newToken(),dir=await shareDir(),now=Date.now();
+  await gj(`${D()}/items/${dir.id}:/${t}.jpg:/content`,{method:'PUT',headers:{'Content-Type':'image/jpeg'},body:jpg});
+  const rec={token:t,fileId:it.id,page:pg,title:String(r[0]||'').trim()||it.name,sheet:it.name,w:c.width,h:c.height,active:true,createdAt:now,createdBy:me.name||me.email};
+  await gj(`${D()}/items/${dir.id}:/${t}.json:/content`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(rec)});
+  const sc=SC.get(it.id);stamp(sc,it);sc.d.shares={...(sc.d.shares||{}),[t]:{title:rec.title,page:pg,createdAt:now,createdBy:rec.createdBy,active:true}};touch(it.id);
+  sendShare(rec.title,shareUrl(t));
 }
-function shareGlugg(x){
-  const u=location.origin+'/gluggar.html?l='+encodeURIComponent(x.id);
-  if(navigator.share)return navigator.share({title:x.heiti,text:'Hakaðu við glugga sem þarf að skipta út',url:u}).catch(()=>{});
-  (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Tengill afritaður')).catch(()=>prompt('Afritaðu tengilinn:',u));
+async function sendShare(title,u){
+  if(navigator.share){try{await navigator.share({title,text:'Merktu þá glugga sem þarf að skipta út:',url:u});return}catch(e){if(e&&e.name==='AbortError')return}}
+  try{await navigator.clipboard.writeText(u);toast('Tengill afritaður – límdu hann í SMS eða tölvupóst',4000)}catch(e){prompt('Afritaðu tengilinn:',u)}
+}
+function manageShares(){
+  const sc=SC.get(curSheet.id);const sh=Object.entries(sc.d.shares||{}).filter(([,x])=>x.active!==false).sort((a,b)=>b[1].createdAt-a[1].createdAt);
+  actions(sh.flatMap(([t,x])=>[{label:`🔗 ${x.title} · ${fmt(x.createdAt)}`,fn:()=>sendShare(x.title,shareUrl(t))},{label:'   ⛔ Loka þessum tengli',danger:true,fn:()=>closeShare(t)}]));
+}
+async function closeShare(t){
+  const ok=await ask({title:'Loka tengli?',text:'Viðskiptavinur getur þá ekki lengur opnað teikninguna. Merkingar sem þegar hafa borist haldast.',ok:'Loka tengli',danger:true});if(!ok)return;
+  const dir=await shareDir();const it=await gj(`${D()}/items/${dir.id}:/${t}.json`);const d=await (await fetch(it['@microsoft.graph.downloadUrl'])).json();d.active=false;d.closedAt=Date.now();
+  await gj(`${D()}/items/${dir.id}:/${t}.json:/content`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+  const sc=SC.get(curSheet.id);if(sc.d.shares&&sc.d.shares[t]){sc.d.shares={...sc.d.shares,[t]:{...sc.d.shares[t],active:false}};touch(curSheet.id)}
+  toast('Tenglinum hefur verið lokað');
 }
 async function newFolder(){
   const root=trail.length===1;
@@ -780,7 +811,7 @@ function createPin(x,y){
   touch(curSheet.id);addMode=false;updateVbar();renderPins();openPin(id);setTimeout(()=>{const t=$('#p-title');if(t)t.focus()},260);
 }
 function editPin(pid,ch){const rec=SC.get(curSheet.id);if(!rec||!rec.d.pins[pid])return;stamp(rec,curSheet);rec.d.pins[pid]={...rec.d.pins[pid],...ch,updatedAt:Date.now(),updatedBy:me.name||me.email};touch(curSheet.id);render()}
-function renderPins(){const box=$('#pins');if(!box)return;box.innerHTML=sheetPins().map(([id,p])=>`<div class="pin ${id===openPinId?'sel':''}" data-pin="${esc(id)}" style="left:${p.x*100}%;top:${p.y*100}%;--c:${(ST[p.status]||ST.opid).c}"><span>${p.n}</span></div>`).join('')}
+function renderPins(){const box=$('#pins');if(!box)return;box.innerHTML=sheetPins().map(([id,p])=>`<div class="pin ${id===openPinId?'sel':''} ${p.cust&&p.cust.skipta?'cust':''}" data-pin="${esc(id)}" style="left:${p.x*100}%;top:${p.y*100}%;--c:${(ST[p.status]||ST.opid).c}"><span>${p.n}</span></div>`).join('')}
 function updateVbar(){
   const b=document.querySelector('[data-v="add"]');if(b)b.classList.toggle('on',addMode);
   const l=document.querySelector('[data-v="list"]');if(l){const o=openCount(sheetPins());l.textContent=`☰ Punktar${o?` (${o})`:''}`}
@@ -809,6 +840,7 @@ function renderPanel(full){
   const seg=Object.entries(ST).map(([k,v])=>`<button data-pa="st" data-v="${k}" class="${p.status===k?'on':''}" style="${p.status===k?`background:${v.c}`:''}">${v.l}</button>`).join('');
   if(full){
     pb.innerHTML=`<div class="ph"><span class="pnum" id="p-num" style="background:${st.c}">${p.n}</span><input id="p-title" placeholder="Heiti punkts, t.d. Vantar þéttingu" value="${esc(p.title)}"><button class="x" data-pa="close">✕</button></div>
+    ${p.cust&&p.cust.skipta?`<div class="custbox">⇄ <b>Viðskiptavinur merkti: skipta út</b><br>${esc(p.cust.nafn||'')}${p.cust.netfang?` · ${esc(p.cust.netfang)}`:''} · ${fmt(p.cust.at)}</div>`:''}
     <div class="seg" id="p-seg">${seg}</div>
     <label class="fl">Lýsing<textarea id="p-desc" placeholder="Hvað þarf að gera?">${esc(p.desc)}</textarea></label>
     <div class="row2"><label class="fl">Ábyrgð<button type="button" class="pickbtn ${assigneeLabel(p)?'':'empty'}" id="p-assignee" data-pa="assignee">${esc(assigneeLabel(p)||'Velja aðila…')}</button></label><label class="fl">Frestur<input id="p-due" type="date" value="${esc(p.due)}"></label></div>
