@@ -24,7 +24,10 @@ async function graphToken() {
     grant_type: "client_credentials",
   });
   const r = await fetch(`https://login.microsoftonline.com/${process.env.VP_TENANT_ID}/oauth2/v2.0/token`, { method: "POST", body });
-  if (!r.ok) throw new Error("Auðkenning við Microsoft mistókst (" + r.status + ")");
+  if (!r.ok) {
+    let c = ""; try { const e = await r.json(); c = (e.error_codes && e.error_codes[0]) || e.error || ""; } catch (x) {}
+    throw new Error("Auðkenning við Microsoft mistókst (" + r.status + (c ? " AADSTS" + c : "") + ")");
+  }
   const j = await r.json();
   appTok = { t: j.access_token, exp: Date.now() + j.expires_in * 1000 };
   return appTok.t;
@@ -41,7 +44,10 @@ const itemPath = (rel) => `${drive()}/root:/${enc(ROOT + "/" + rel)}`;
 async function readJson(rel) {
   const r = await g(itemPath(rel) + "?$select=id,eTag,@microsoft.graph.downloadUrl");
   if (r.status === 404) return null;
-  if (!r.ok) throw new Error("Graph " + r.status);
+  if (!r.ok) {
+    let c = ""; try { const e = await r.json(); c = (e.error && e.error.code) || ""; } catch (x) {}
+    throw new Error("Graph " + r.status + (c ? " " + c : ""));
+  }
   const it = await r.json();
   const c = await fetch(it["@microsoft.graph.downloadUrl"]);
   let d = {};
@@ -171,6 +177,6 @@ module.exports = async function (context, req) {
     context.res = json(405, { error: "Óleyfileg aðgerð" });
   } catch (e) {
     context.log.error(e);
-    context.res = json(500, { error: "Villa kom upp. Reyndu aftur síðar." });
+    context.res = json(500, { error: "Villa kom upp. Reyndu aftur síðar.", kodi: String((e && e.message) || e).slice(0, 120) });
   }
 };
