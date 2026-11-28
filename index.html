@@ -622,9 +622,19 @@ $('#menu').onclick=()=>{
   }
   if(view==='sheet'&&curSheet)L.push({label:'🏷 Flokkur: '+(catOf(curSheet.id)||'enginn'),fn:()=>editCat(curSheet)},{label:'↗ Opna skrána í OneDrive',fn:()=>window.open(curSheet.webUrl,'_blank')},{label:'🗑 Eyða teikningu',danger:true,fn:deleteSheet});
   if(view!=='people')L.push({label:'👥 Notendur og fyrirtæki',fn:openPeople});
+  L.push({label:'🪟 Gluggalistar – senda tengil',fn:openGluggar});
   L.push({label:'☁️ Skipta um geymslu ('+cfg.driveName+')',fn:pickDrive},{label:'⎋ Skrá út ('+(me.name||me.email)+')',fn:logout});
   actions(L);
 };
+async function openGluggar(){
+  let ls=[];try{ls=await (await fetch('gluggar/listar.json',{cache:'no-cache'})).json()}catch(e){return toast('Gat ekki sótt gluggalista')}
+  actions(ls.map(x=>({label:'🔗 '+x.heiti,fn:()=>shareGlugg(x)})));
+}
+function shareGlugg(x){
+  const u=location.origin+'/gluggar.html?l='+encodeURIComponent(x.id);
+  if(navigator.share)return navigator.share({title:x.heiti,text:'Hakaðu við glugga sem þarf að skipta út',url:u}).catch(()=>{});
+  (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast('Tengill afritaður')).catch(()=>prompt('Afritaðu tengilinn:',u));
+}
 async function newFolder(){
   const root=trail.length===1;
   const r=await ask({title:root?'Nýtt verkefni':'Ný mappa',fields:[{label:'Heiti',ph:root?'t.d. Hverfisgata 12':'t.d. 2. hæð – Rafmagn'}],ok:'Stofna'});
