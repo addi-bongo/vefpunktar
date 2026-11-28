@@ -8,39 +8,39 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{--y:#fbba2f;--ink:#16181d;--mut:#6b7280;--line:#e5e7eb;--bg:#f5f5f4;--card:#fff;--ok:#15803d;--err:#b91c1c}
+:root{--y:#fbba2f;--yd:#d99a10;--ink:#16181d;--mut:#6b7280;--line:#e5e7eb;--bg:#f5f5f4;--err:#b91c1c}
 *{box-sizing:border-box}
 body{margin:0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
 header{background:#141414;color:#fff}
-.top{max-width:860px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:12px}
+.top{max-width:1000px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:12px}
 .top img{width:40px;height:40px;border-radius:9px}
 .top b{display:block;font-size:17px;letter-spacing:.04em}
 .top span{display:block;font-size:12px;color:#bbb;letter-spacing:.12em;text-transform:uppercase}
-main{max-width:860px;margin:0 auto;padding:20px}
-h1{font-size:clamp(24px,5vw,34px);line-height:1.15;margin:8px 0 8px}
-.lead{color:#444;margin:0 0 18px;max-width:640px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:0 0 18px;overflow:hidden}
-.card h2{font-size:16px;margin:0;padding:14px 16px;border-bottom:1px solid var(--line)}
-.tools{display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+main{max-width:1000px;margin:0 auto;padding:20px}
+h1{font-size:clamp(24px,5vw,34px);line-height:1.15;margin:6px 0 8px}
+.lead{color:#444;margin:0 0 16px;max-width:640px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;margin:0 0 18px;overflow:hidden}
+.card h2{font-size:16px;margin:0;padding:13px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px}
+.card h2 small{font-weight:500;color:var(--mut)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.draw{position:relative;min-width:640px;margin:0 auto}
+.draw img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+.hs{position:absolute;border:2px dashed var(--yd);background:rgba(251,186,47,.10);border-radius:4px;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hs:hover{background:rgba(251,186,47,.22)}
+.hs:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}
+.hs .tag{position:absolute;left:50%;top:-14px;transform:translateX(-50%);background:#141414;color:#fff;font-size:12px;font-weight:700;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.hs[aria-pressed=true]{border:3px solid #b45309;background:rgba(251,186,47,.55)}
+.hs[aria-pressed=true] .tag{background:var(--y);color:#141414}
+.hs[aria-pressed=true]::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(18px,3vw,34px);font-weight:800;color:#7c2d12}
+.hint{font-size:13px;color:var(--mut);padding:8px 16px;border-top:1px solid var(--line)}
+.sel{padding:14px 16px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:#fff7e0;border:1px solid #f5d27a;border-radius:999px;padding:5px 12px;font-weight:600;font-size:14px}
+.tools{display:flex;gap:8px;margin-top:12px}
 .tools button{background:#f3f4f6;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
-.row{display:grid;grid-template-columns:34px 64px 1fr auto;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
-.row:last-child{border-bottom:0}
-.row.on{background:#fffbeb}
-.row input[type=checkbox]{width:24px;height:24px;accent-color:#d99a10;margin:0}
-.nr{font-weight:700;font-size:18px}
-.info{font-size:14px;color:var(--mut)}
-.qty{display:flex;align-items:center;gap:6px}
-.qty button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:18px;cursor:pointer}
-.qty output{min-width:52px;text-align:center;font-weight:600}
-.qty[hidden]{display:none}
-.rt{font-weight:600;white-space:nowrap}
-.sum{padding:14px 16px}
-.sum div{display:flex;justify-content:space-between;padding:4px 0}
-.sum .tot{font-size:19px;font-weight:700;border-top:1px solid var(--line);margin-top:6px;padding-top:10px}
-.sum small{color:var(--mut)}
 form{padding:16px;display:grid;gap:14px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-label span{display:block;font-size:14px;font-weight:600;margin-bottom:5px}
+label>span{display:block;font-size:14px;font-weight:600;margin-bottom:5px}
 input[type=text],input[type=email],textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff}
 textarea{min-height:90px;resize:vertical}
 [aria-invalid=true]{border-color:var(--err)!important;outline-color:var(--err)}
@@ -48,27 +48,29 @@ textarea{min-height:90px;resize:vertical}
 .error:empty{display:none}
 .btn{background:var(--y);color:#141414;border:0;border-radius:12px;padding:15px 20px;font:inherit;font-weight:700;font-size:17px;cursor:pointer}
 .btn:disabled{opacity:.6}
-.terms{padding:14px 16px;font-size:14px;color:#444}
-.terms p{margin:0 0 8px}
 .done{padding:28px 18px;text-align:center}
-.done h2{border:0;font-size:22px}
+.done h2{border:0;font-size:22px;display:block}
 .muted{color:var(--mut);font-size:14px}
-@media (max-width:560px){.two{grid-template-columns:1fr}.row{grid-template-columns:30px 52px 1fr;}.row .rt{grid-column:2/4;justify-self:end;font-size:14px}}
+footer{max-width:1000px;margin:0 auto;padding:4px 20px 30px;color:var(--mut);font-size:13px}
+.swipe{display:none}
+@media (max-width:700px){.swipe{display:inline}}
+@media (max-width:560px){.two{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <header><div class="top"><img src="icon-192.png" alt=""><div><b>ARMAÞING</b><span>Gluggalisti</span></div></div></header>
-<main id="app"><p class="muted">Hleð gluggalista…</p></main>
+<main id="app"><p class="muted">Hleð teikningum…</p></main>
+<footer>Armaþing ehf · armathing.is</footer>
 
 <script>
-// Wix Forms: svör berast í Wix-stjórnborð Armaþings (form „Gluggaval“).
+// Svör berast í Wix-stjórnborð Armaþings (form „Gluggaval“).
 // WIX_CLIENT_ID er opinbert auðkenni (ekki leyndarmál) sem býr aðeins til nafnlausan gestalykil.
 const WIX_CLIENT_ID = 'e3940393-ee3e-42a4-bd26-eaafa8409569';
 const FORM_ID = '5d3454d3-0fd8-47c0-ac8b-17e07edf5655';
-const T = { // svarlyklar (target) úr formi Gluggaval – staðfestir við uppsetningu
+const T = { // svarlyklar (target) úr formi Gluggaval
   fornafn: 'fornafn_h9kui0', eftirnafn: 'eftirnafn_1v1d3t', netfang: 'netfang_1qm3ub',
   fyrirtaeki: 'fyrirtaeki_g8fmon', verk: 'verk_tgvxq7', valdir: 'valdir_gluggar_gyazro',
-  verd: 'aaetlad_verd_n8lav0', athugasemd: 'athugasemd_eb4mwk'
+  athugasemd: 'athugasemd_eb4mwk'
 };
 const API = 'https://www.wixapis.com';
 const TOKEN_KEY = 'wix-visitor-token-' + WIX_CLIENT_ID;
@@ -96,10 +98,10 @@ async function submitForm(values){
   return d;
 }
 
-const kr = n => Math.round(n).toLocaleString('de-DE') + ' kr.';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $ = s => document.querySelector(s);
-let L, sel = {};
+const pct = v => (v*100).toFixed(3) + '%';
+let L, sel = new Set();
 
 async function load(){
   const id = (new URLSearchParams(location.search).get('l') || '').replace(/[^a-z0-9-]/gi,'');
@@ -117,31 +119,24 @@ function render(){
   $('#app').innerHTML = `
   <h1>${esc(L.heiti)}</h1>
   <p class="lead">${esc(L.lysing || '')}</p>
-  <section class="card" aria-labelledby="h-gl">
-    <h2 id="h-gl">Gluggar</h2>
-    <div class="tools"><button type="button" id="all">Velja alla</button><button type="button" id="none">Hreinsa val</button></div>
-    <div id="rows">${L.gluggar.map((g,i) => `
-      <div class="row" id="r${i}">
-        <input type="checkbox" id="c${i}" data-i="${i}" aria-label="Skipta út ${esc(g.nr)}">
-        <label class="nr" for="c${i}">${esc(g.nr)}</label>
-        <div>
-          <div class="info">${g.magn} stk. · ${kr(g.verd)}/stk.</div>
-          <div class="qty" id="q${i}" hidden ${g.magn>1?'':'data-single'}>
-            <button type="button" data-m="${i}" aria-label="Fækka">−</button>
-            <output id="o${i}" aria-live="polite"></output>
-            <button type="button" data-p="${i}" aria-label="Fjölga">+</button>
-          </div>
-        </div>
-        <div class="rt" id="t${i}"></div>
-      </div>`).join('')}
-    </div>
-  </section>
-  <section class="card" aria-labelledby="h-sum">
-    <h2 id="h-sum">Samantekt</h2>
-    <div class="sum" id="sum"></div>
+  ${L.teikningar.map((t,ti) => `
+  <section class="card" aria-labelledby="h-t${ti}">
+    <h2 id="h-t${ti}">${esc(t.heiti)} <small>${t.gluggar.length} ${t.gluggar.length===1?'gluggi':'gluggar'}</small></h2>
+    <div class="scroll"><div class="draw">
+      <img src="${esc(t.mynd)}" width="${t.b||''}" height="${t.h||''}" alt="Útlitsteikning: ${esc(t.heiti)}">
+      ${t.gluggar.map((g,gi) => `<button type="button" class="hs" data-k="${ti}:${gi}" aria-pressed="false"
+          style="left:${pct(g.x)};top:${pct(g.y)};width:${pct(g.w)};height:${pct(g.h)}"
+          aria-label="${esc(g.nr)} – ${esc(t.heiti)}"><span class="tag">${esc(g.nr)}</span></button>`).join('')}
+    </div></div>
+    <div class="hint">Ýttu á glugga til að merkja að það þurfi að skipta honum út.<span class="swipe"> Strjúktu til hliðar til að sjá alla hliðina.</span></div>
+  </section>`).join('')}
+  <section class="card" aria-labelledby="h-sel">
+    <h2 id="h-sel">Merktir gluggar</h2>
+    <div class="sel"><div id="chips" aria-live="polite"></div>
+      <div class="tools"><button type="button" id="none">Hreinsa val</button></div></div>
   </section>
   <section class="card" aria-labelledby="h-f">
-    <h2 id="h-f">Senda val</h2>
+    <h2 id="h-f">Senda</h2>
     <form id="f" novalidate>
       <div class="two">
         <label><span>Fornafn <span aria-hidden="true">*</span></span><input type="text" name="fornafn" required autocomplete="given-name" aria-describedby="err-fornafn"><p class="error" id="err-fornafn" role="alert"></p></label>
@@ -151,47 +146,31 @@ function render(){
         <label><span>Netfang <span aria-hidden="true">*</span></span><input type="email" name="netfang" required autocomplete="email" inputmode="email" aria-describedby="err-netfang"><p class="error" id="err-netfang" role="alert"></p></label>
         <label><span>Fyrirtæki / húsfélag</span><input type="text" name="fyrirtaeki" autocomplete="organization"></label>
       </div>
-      <label><span>Athugasemd</span><textarea name="athugasemd" placeholder="T.d. hvaða íbúð eða hlið hússins gluggarnir eru á"></textarea></label>
+      <label><span>Athugasemd</span><textarea name="athugasemd" placeholder="T.d. ef gluggi er sprunginn, móða milli glerja eða opnanlegt fag stíft"></textarea></label>
       <p class="error" id="err-form" role="alert"></p>
-      <button class="btn" type="submit" id="send">Senda val</button>
-      <p class="muted">Armaþing fær valið sent og hefur samband.</p>
+      <button class="btn" type="submit" id="send">Senda merkta glugga</button>
+      <p class="muted">Armaþing fær listann sendan og hefur samband.</p>
     </form>
-  </section>
-  ${L.skilmalar ? `<section class="card"><h2>Skilmálar</h2><div class="terms">${L.skilmalar.map(s=>`<p>${esc(s)}</p>`).join('')}${L.timavinna?`<p>Tímavinna iðnaðarmanna: ${kr(L.timavinna)} á klst.</p>`:''}${L.fra?`<p class="muted">${esc(L.fra)}</p>`:''}</div></section>` : ''}`;
+  </section>`;
 
-  $('#rows').addEventListener('change', e => { const i = e.target.dataset.i; if(i==null) return; if(e.target.checked) sel[i] = L.gluggar[i].magn; else delete sel[i]; upd(); });
-  $('#rows').addEventListener('click', e => {
-    const m = e.target.dataset.m, p = e.target.dataset.p;
-    if(m!=null && sel[m] > 1){ sel[m]--; upd(); }
-    if(p!=null && sel[p] < L.gluggar[p].magn){ sel[p]++; upd(); }
-  });
-  $('#all').onclick = () => { L.gluggar.forEach((g,i) => sel[i] = g.magn); upd(); };
-  $('#none').onclick = () => { sel = {}; upd(); };
+  document.querySelectorAll('.hs').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.k; sel.has(k) ? sel.delete(k) : sel.add(k); upd();
+  }));
+  $('#none').onclick = () => { sel.clear(); upd(); };
   $('#f').addEventListener('submit', send);
   for(const n of ['fornafn','netfang']) $('#f').elements[n].addEventListener('blur', () => check(n));
   upd();
 }
 
-function totals(){
-  let gl = 0, stk = 0;
-  for(const i in sel){ gl += sel[i] * L.gluggar[i].verd; stk += sel[i]; }
-  const fast = stk ? (L.fastir||[]).reduce((a,f) => a + f.verd, 0) : 0;
-  return {gl, stk, fast, tot: gl + fast};
+function chosen(){
+  return L.teikningar.map((t,ti) => ({t, g: t.gluggar.filter((g,gi) => sel.has(ti+':'+gi))})).filter(x => x.g.length);
 }
 function upd(){
-  L.gluggar.forEach((g,i) => {
-    const on = sel[i] != null;
-    $('#c'+i).checked = on; $('#r'+i).classList.toggle('on', on);
-    const q = $('#q'+i); q.hidden = !on || g.magn === 1;
-    $('#o'+i).textContent = on ? `${sel[i]} af ${g.magn}` : '';
-    $('#t'+i).textContent = on ? kr(sel[i]*g.verd) : '';
-  });
-  const t = totals();
-  $('#sum').innerHTML = t.stk ? `
-    <div><span>Valdir gluggar (${t.stk} stk.)</span><b>${kr(t.gl)}</b></div>
-    ${(L.fastir||[]).map(f=>`<div><span>${esc(f.heiti)}</span><span>${kr(f.verd)}</span></div>`).join('')}
-    <div class="tot"><span>Áætlað samtals</span><span>${kr(t.tot)}</span></div>
-    <small>Öll verð með vsk.</small>` : '<p class="muted" style="margin:0">Engir gluggar valdir enn. Hakaðu við þá sem þarf að skipta út.</p>';
+  document.querySelectorAll('.hs').forEach(b => b.setAttribute('aria-pressed', sel.has(b.dataset.k)));
+  const c = chosen();
+  $('#chips').innerHTML = c.length
+    ? c.map(x => `<p style="margin:0 0 6px"><b>${esc(x.t.heiti)}:</b></p><div class="chips" style="margin-bottom:10px">${x.g.map(g=>`<span class="chip">${esc(g.nr)}</span>`).join('')}</div>`).join('') + `<p class="muted" style="margin:0">${sel.size} ${sel.size===1?'gluggi merktur':'gluggar merktir'}</p>`
+    : '<p class="muted" style="margin:0">Engir gluggar merktir enn. Ýttu á gluggana á teikningunum hér fyrir ofan.</p>';
 }
 
 function check(n){
@@ -207,31 +186,29 @@ async function send(e){
   e.preventDefault();
   const f = $('#f'); $('#err-form').textContent = '';
   const ok = [check('fornafn'), check('netfang')];
-  const t = totals();
-  if(!t.stk){ $('#err-form').textContent = 'Veldu a.m.k. einn glugga.'; return; }
+  const c = chosen();
+  if(!c.length){ $('#err-form').textContent = 'Merktu a.m.k. einn glugga á teikningunum.'; return; }
   if(ok.includes(false)){ f.querySelector('[aria-invalid=true]').focus(); return; }
-  const lines = Object.keys(sel).sort((a,b)=>a-b).map(i => { const g = L.gluggar[i]; return `${g.nr}: ${sel[i]} af ${g.magn} stk. × ${kr(g.verd)} = ${kr(sel[i]*g.verd)}`; });
-  (L.fastir||[]).forEach(x => lines.push(`${x.heiti}: ${kr(x.verd)}`));
-  lines.push(`Áætlað samtals: ${kr(t.tot)} (m/vsk)`);
+  const lines = c.map(x => `${x.t.heiti}: ${x.g.map(g=>g.nr).join(', ')}`);
+  lines.push(`Samtals: ${sel.size} ${sel.size===1?'gluggi':'gluggar'}`);
   const v = {};
   v[T.fornafn] = f.elements.fornafn.value.trim();
   v[T.netfang] = f.elements.netfang.value.trim();
   v[T.verk] = L.heiti;
   v[T.valdir] = lines.join('\n');
-  v[T.verd] = t.tot;
   const opt = {eftirnafn:T.eftirnafn, fyrirtaeki:T.fyrirtaeki, athugasemd:T.athugasemd};
   for(const k in opt){ const x = f.elements[k].value.trim(); if(x) v[opt[k]] = x; }
   const b = $('#send'); b.disabled = true; b.textContent = 'Sendi…';
   try{
     await submitForm(v);
     $('#app').innerHTML = `<section class="card done" role="status"><h2 tabindex="-1" id="ok">Takk fyrir!</h2>
-      <p>Valið þitt fyrir <b>${esc(L.heiti)}</b> hefur verið sent til Armaþings.</p>
-      <p class="muted">${t.stk} gluggar · áætlað ${kr(t.tot)} m/vsk</p></section>`;
+      <p>Merktu gluggarnir fyrir <b>${esc(L.heiti)}</b> hafa verið sendir til Armaþings.</p>
+      <p class="muted">${esc(lines.slice(0,-1).join(' · '))}</p></section>`;
     $('#ok').focus();
   }catch(err){
     console.debug(err, err.body);
     $('#err-form').textContent = 'Ekki tókst að senda. Reyndu aftur eða hafðu samband við Armaþing.';
-    b.disabled = false; b.textContent = 'Senda val';
+    b.disabled = false; b.textContent = 'Senda merkta glugga';
   }
 }
 load();
