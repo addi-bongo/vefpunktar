@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#141414">
+<title>Gluggalisti – Armaþing</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--y:#fbba2f;--ink:#16181d;--mut:#6b7280;--line:#e5e7eb;--bg:#f5f5f4;--card:#fff;--ok:#15803d;--err:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:#141414;color:#fff}
+.top{max-width:860px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:12px}
+.top img{width:40px;height:40px;border-radius:9px}
+.top b{display:block;font-size:17px;letter-spacing:.04em}
+.top span{display:block;font-size:12px;color:#bbb;letter-spacing:.12em;text-transform:uppercase}
+main{max-width:860px;margin:0 auto;padding:20px}
+h1{font-size:clamp(24px,5vw,34px);line-height:1.15;margin:8px 0 8px}
+.lead{color:#444;margin:0 0 18px;max-width:640px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:0 0 18px;overflow:hidden}
+.card h2{font-size:16px;margin:0;padding:14px 16px;border-bottom:1px solid var(--line)}
+.tools{display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tools button{background:#f3f4f6;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+.row{display:grid;grid-template-columns:34px 64px 1fr auto;gap:10px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row.on{background:#fffbeb}
+.row input[type=checkbox]{width:24px;height:24px;accent-color:#d99a10;margin:0}
+.nr{font-weight:700;font-size:18px}
+.info{font-size:14px;color:var(--mut)}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:18px;cursor:pointer}
+.qty output{min-width:52px;text-align:center;font-weight:600}
+.qty[hidden]{display:none}
+.rt{font-weight:600;white-space:nowrap}
+.sum{padding:14px 16px}
+.sum div{display:flex;justify-content:space-between;padding:4px 0}
+.sum .tot{font-size:19px;font-weight:700;border-top:1px solid var(--line);margin-top:6px;padding-top:10px}
+.sum small{color:var(--mut)}
+form{padding:16px;display:grid;gap:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label span{display:block;font-size:14px;font-weight:600;margin-bottom:5px}
+input[type=text],input[type=email],textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff}
+textarea{min-height:90px;resize:vertical}
+[aria-invalid=true]{border-color:var(--err)!important;outline-color:var(--err)}
+.error{color:var(--err);font-size:13px;margin:4px 0 0}
+.error:empty{display:none}
+.btn{background:var(--y);color:#141414;border:0;border-radius:12px;padding:15px 20px;font:inherit;font-weight:700;font-size:17px;cursor:pointer}
+.btn:disabled{opacity:.6}
+.terms{padding:14px 16px;font-size:14px;color:#444}
+.terms p{margin:0 0 8px}
+.done{padding:28px 18px;text-align:center}
+.done h2{border:0;font-size:22px}
+.muted{color:var(--mut);font-size:14px}
+@media (max-width:560px){.two{grid-template-columns:1fr}.row{grid-template-columns:30px 52px 1fr;}.row .rt{grid-column:2/4;justify-self:end;font-size:14px}}
+</style>
+</head>
+<body>
+<header><div class="top"><img src="icon-192.png" alt=""><div><b>ARMAÞING</b><span>Gluggalisti</span></div></div></header>
+<main id="app"><p class="muted">Hleð gluggalista…</p></main>
+
+<script>
+// Wix Forms: svör berast í Wix-stjórnborð Armaþings (form „Gluggaval“).
+// WIX_CLIENT_ID er opinbert auðkenni (ekki leyndarmál) sem býr aðeins til nafnlausan gestalykil.
+const WIX_CLIENT_ID = 'e3940393-ee3e-42a4-bd26-eaafa8409569';
+const FORM_ID = '5d3454d3-0fd8-47c0-ac8b-17e07edf5655';
+const T = { // svarlyklar (target) úr formi Gluggaval – staðfestir við uppsetningu
+  fornafn: 'fornafn_h9kui0', eftirnafn: 'eftirnafn_1v1d3t', netfang: 'netfang_1qm3ub',
+  fyrirtaeki: 'fyrirtaeki_g8fmon', verk: 'verk_tgvxq7', valdir: 'valdir_gluggar_gyazro',
+  verd: 'aaetlad_verd_n8lav0', athugasemd: 'athugasemd_eb4mwk'
+};
+const API = 'https://www.wixapis.com';
+const TOKEN_KEY = 'wix-visitor-token-' + WIX_CLIENT_ID;
+
+async function mint(body){
+  const r = await fetch(API + '/oauth2/token', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  if(!r.ok) throw new Error('Wix OAuth ' + r.status);
+  const d = await r.json();
+  return {accessToken:d.access_token, refreshToken:d.refresh_token, expiresAt:Date.now() + d.expires_in*1000};
+}
+async function token(){
+  let c = null; try{ c = JSON.parse(localStorage.getItem(TOKEN_KEY)); }catch(e){}
+  if(c && c.expiresAt > Date.now() + 60000) return c.accessToken;
+  if(c && c.refreshToken){ try{ const t = await mint({clientId:WIX_CLIENT_ID, grantType:'refresh_token', refreshToken:c.refreshToken}); save(t); return t.accessToken; }catch(e){} }
+  const t = await mint({clientId:WIX_CLIENT_ID, grantType:'anonymous'}); save(t); return t.accessToken;
+  function save(t){ try{ localStorage.setItem(TOKEN_KEY, JSON.stringify(t)); }catch(e){} }
+}
+async function submitForm(values){
+  const r = await fetch(API + '/form-submission-service/v4/submissions', {
+    method:'POST', headers:{'Content-Type':'application/json', Authorization: await token()},
+    body: JSON.stringify({submission:{formId:FORM_ID, submissions:values}})
+  });
+  const txt = await r.text(); let d; try{ d = JSON.parse(txt); }catch(e){ d = txt; }
+  if(!r.ok){ const e = new Error('Wix ' + r.status); e.body = d; throw e; }
+  return d;
+}
+
+const kr = n => Math.round(n).toLocaleString('de-DE') + ' kr.';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $ = s => document.querySelector(s);
+let L, sel = {};
+
+async function load(){
+  const id = (new URLSearchParams(location.search).get('l') || '').replace(/[^a-z0-9-]/gi,'');
+  if(!id){ $('#app').innerHTML = '<p>Enginn gluggalisti valinn. Notaðu tengilinn sem þú fékkst sendan.</p>'; return; }
+  try{
+    const r = await fetch('gluggar/' + id + '.json', {cache:'no-cache'});
+    if(!r.ok) throw 0;
+    L = await r.json();
+  }catch(e){ $('#app').innerHTML = '<p role="alert">Gluggalistinn fannst ekki. Athugaðu tengilinn.</p>'; return; }
+  document.title = L.heiti + ' – Armaþing';
+  render();
+}
+
+function render(){
+  $('#app').innerHTML = `
+  <h1>${esc(L.heiti)}</h1>
+  <p class="lead">${esc(L.lysing || '')}</p>
+  <section class="card" aria-labelledby="h-gl">
+    <h2 id="h-gl">Gluggar</h2>
+    <div class="tools"><button type="button" id="all">Velja alla</button><button type="button" id="none">Hreinsa val</button></div>
+    <div id="rows">${L.gluggar.map((g,i) => `
+      <div class="row" id="r${i}">
+        <input type="checkbox" id="c${i}" data-i="${i}" aria-label="Skipta út ${esc(g.nr)}">
+        <label class="nr" for="c${i}">${esc(g.nr)}</label>
+        <div>
+          <div class="info">${g.magn} stk. · ${kr(g.verd)}/stk.</div>
+          <div class="qty" id="q${i}" hidden ${g.magn>1?'':'data-single'}>
+            <button type="button" data-m="${i}" aria-label="Fækka">−</button>
+            <output id="o${i}" aria-live="polite"></output>
+            <button type="button" data-p="${i}" aria-label="Fjölga">+</button>
+          </div>
+        </div>
+        <div class="rt" id="t${i}"></div>
+      </div>`).join('')}
+    </div>
+  </section>
+  <section class="card" aria-labelledby="h-sum">
+    <h2 id="h-sum">Samantekt</h2>
+    <div class="sum" id="sum"></div>
+  </section>
+  <section class="card" aria-labelledby="h-f">
+    <h2 id="h-f">Senda val</h2>
+    <form id="f" novalidate>
+      <div class="two">
+        <label><span>Fornafn <span aria-hidden="true">*</span></span><input type="text" name="fornafn" required autocomplete="given-name" aria-describedby="err-fornafn"><p class="error" id="err-fornafn" role="alert"></p></label>
+        <label><span>Eftirnafn</span><input type="text" name="eftirnafn" autocomplete="family-name"></label>
+      </div>
+      <div class="two">
+        <label><span>Netfang <span aria-hidden="true">*</span></span><input type="email" name="netfang" required autocomplete="email" inputmode="email" aria-describedby="err-netfang"><p class="error" id="err-netfang" role="alert"></p></label>
+        <label><span>Fyrirtæki / húsfélag</span><input type="text" name="fyrirtaeki" autocomplete="organization"></label>
+      </div>
+      <label><span>Athugasemd</span><textarea name="athugasemd" placeholder="T.d. hvaða íbúð eða hlið hússins gluggarnir eru á"></textarea></label>
+      <p class="error" id="err-form" role="alert"></p>
+      <button class="btn" type="submit" id="send">Senda val</button>
+      <p class="muted">Armaþing fær valið sent og hefur samband.</p>
+    </form>
+  </section>
+  ${L.skilmalar ? `<section class="card"><h2>Skilmálar</h2><div class="terms">${L.skilmalar.map(s=>`<p>${esc(s)}</p>`).join('')}${L.timavinna?`<p>Tímavinna iðnaðarmanna: ${kr(L.timavinna)} á klst.</p>`:''}${L.fra?`<p class="muted">${esc(L.fra)}</p>`:''}</div></section>` : ''}`;
+
+  $('#rows').addEventListener('change', e => { const i = e.target.dataset.i; if(i==null) return; if(e.target.checked) sel[i] = L.gluggar[i].magn; else delete sel[i]; upd(); });
+  $('#rows').addEventListener('click', e => {
+    const m = e.target.dataset.m, p = e.target.dataset.p;
+    if(m!=null && sel[m] > 1){ sel[m]--; upd(); }
+    if(p!=null && sel[p] < L.gluggar[p].magn){ sel[p]++; upd(); }
+  });
+  $('#all').onclick = () => { L.gluggar.forEach((g,i) => sel[i] = g.magn); upd(); };
+  $('#none').onclick = () => { sel = {}; upd(); };
+  $('#f').addEventListener('submit', send);
+  for(const n of ['fornafn','netfang']) $('#f').elements[n].addEventListener('blur', () => check(n));
+  upd();
+}
+
+function totals(){
+  let gl = 0, stk = 0;
+  for(const i in sel){ gl += sel[i] * L.gluggar[i].verd; stk += sel[i]; }
+  const fast = stk ? (L.fastir||[]).reduce((a,f) => a + f.verd, 0) : 0;
+  return {gl, stk, fast, tot: gl + fast};
+}
+function upd(){
+  L.gluggar.forEach((g,i) => {
+    const on = sel[i] != null;
+    $('#c'+i).checked = on; $('#r'+i).classList.toggle('on', on);
+    const q = $('#q'+i); q.hidden = !on || g.magn === 1;
+    $('#o'+i).textContent = on ? `${sel[i]} af ${g.magn}` : '';
+    $('#t'+i).textContent = on ? kr(sel[i]*g.verd) : '';
+  });
+  const t = totals();
+  $('#sum').innerHTML = t.stk ? `
+    <div><span>Valdir gluggar (${t.stk} stk.)</span><b>${kr(t.gl)}</b></div>
+    ${(L.fastir||[]).map(f=>`<div><span>${esc(f.heiti)}</span><span>${kr(f.verd)}</span></div>`).join('')}
+    <div class="tot"><span>Áætlað samtals</span><span>${kr(t.tot)}</span></div>
+    <small>Öll verð með vsk.</small>` : '<p class="muted" style="margin:0">Engir gluggar valdir enn. Hakaðu við þá sem þarf að skipta út.</p>';
+}
+
+function check(n){
+  const el = $('#f').elements[n]; const v = el.value.trim(); let msg = '';
+  if(!v) msg = 'Vantar ' + (n === 'fornafn' ? 'fornafn' : 'netfang') + '.';
+  else if(n === 'netfang' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) msg = 'Netfangið virðist ekki rétt.';
+  $('#err-'+n).textContent = msg;
+  if(msg) el.setAttribute('aria-invalid','true'); else el.removeAttribute('aria-invalid');
+  return !msg;
+}
+
+async function send(e){
+  e.preventDefault();
+  const f = $('#f'); $('#err-form').textContent = '';
+  const ok = [check('fornafn'), check('netfang')];
+  const t = totals();
+  if(!t.stk){ $('#err-form').textContent = 'Veldu a.m.k. einn glugga.'; return; }
+  if(ok.includes(false)){ f.querySelector('[aria-invalid=true]').focus(); return; }
+  const lines = Object.keys(sel).sort((a,b)=>a-b).map(i => { const g = L.gluggar[i]; return `${g.nr}: ${sel[i]} af ${g.magn} stk. × ${kr(g.verd)} = ${kr(sel[i]*g.verd)}`; });
+  (L.fastir||[]).forEach(x => lines.push(`${x.heiti}: ${kr(x.verd)}`));
+  lines.push(`Áætlað samtals: ${kr(t.tot)} (m/vsk)`);
+  const v = {};
+  v[T.fornafn] = f.elements.fornafn.value.trim();
+  v[T.netfang] = f.elements.netfang.value.trim();
+  v[T.verk] = L.heiti;
+  v[T.valdir] = lines.join('\n');
+  v[T.verd] = t.tot;
+  const opt = {eftirnafn:T.eftirnafn, fyrirtaeki:T.fyrirtaeki, athugasemd:T.athugasemd};
+  for(const k in opt){ const x = f.elements[k].value.trim(); if(x) v[opt[k]] = x; }
+  const b = $('#send'); b.disabled = true; b.textContent = 'Sendi…';
+  try{
+    await submitForm(v);
+    $('#app').innerHTML = `<section class="card done" role="status"><h2 tabindex="-1" id="ok">Takk fyrir!</h2>
+      <p>Valið þitt fyrir <b>${esc(L.heiti)}</b> hefur verið sent til Armaþings.</p>
+      <p class="muted">${t.stk} gluggar · áætlað ${kr(t.tot)} m/vsk</p></section>`;
+    $('#ok').focus();
+  }catch(err){
+    console.debug(err, err.body);
+    $('#err-form').textContent = 'Ekki tókst að senda. Reyndu aftur eða hafðu samband við Armaþing.';
+    b.disabled = false; b.textContent = 'Senda val';
+  }
+}
+load();
+</script>
+</body>
+</html>
